@@ -221,7 +221,8 @@ module HomebrewArgvExtension
   end
 
   def build_from_source?
-    switch?("s") || include?("--build-from-source")
+    #switch?("s") || include?("--build-from-source")
+    true
   end
 
   # Whether a given formula should be built from source during the current
