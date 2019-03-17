@@ -116,7 +116,7 @@ class FormulaInstaller
       return false
     end
 
-    true
+    false
   end
 
   def install_bottle_for?(dep, build)
