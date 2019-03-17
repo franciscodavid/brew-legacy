@@ -274,7 +274,7 @@ EOS
   if [[ -n "$HOMEBREW_NO_UPDATE_CLEANUP" ]]
   then
     if [[ "$INITIAL_BRANCH" != "$UPSTREAM_BRANCH" && -n "$INITIAL_BRANCH" &&
-          ! "$INITIAL_BRANCH" =~ ^v[0-9]+\.[0-9]+\.[0-9]|stable$ ]]
+          ! "$INITIAL_BRANCH" =~ ^v[0-9]+\.[0-9]+\.[0-9]-legacy|stable$ ]]
     then
       git checkout "$INITIAL_BRANCH" "${QUIET_ARGS[@]}"
     fi
