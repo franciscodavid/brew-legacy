@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "resource"
 require "metafiles"
 
@@ -17,10 +19,11 @@ module DiskUsageExtension
   end
 
   def abv
-    out = ""
+    out = +""
     compute_disk_usage
     out << "#{number_readable(@file_count)} files, " if @file_count > 1
     out << disk_usage_readable(@disk_usage).to_s
+    out.freeze
   end
 
   private
@@ -65,7 +68,7 @@ module DiskUsageExtension
 end
 
 # Homebrew extends Ruby's `Pathname` to make our code more readable.
-# @see https://ruby-doc.org/stdlib-1.8.7/libdoc/pathname/rdoc/Pathname.html  Ruby's Pathname API
+# @see https://ruby-doc.org/stdlib-1.8.7/libdoc/pathname/rdoc/Pathname.html Ruby's Pathname API
 class Pathname
   include DiskUsageExtension
 
@@ -135,10 +138,11 @@ class Pathname
   end
 
   def install_symlink_p(src, new_basename)
-    src = Pathname(src).expand_path(self)
-    dst = join(new_basename)
     mkpath
-    FileUtils.ln_sf(src.relative_path_from(dst.parent), dst)
+    dstdir = realpath
+    src = Pathname(src).expand_path(dstdir)
+    src = src.dirname.realpath/src.basename if src.dirname.exist?
+    FileUtils.ln_sf(src.relative_path_from(dstdir), dstdir/new_basename)
   end
   private :install_symlink_p
 
@@ -162,8 +166,30 @@ class Pathname
 
   # NOTE: This always overwrites.
   def atomic_write(content)
+    old_stat = stat if exist?
     File.atomic_write(self) do |file|
       file.write(content)
+    end
+
+    return unless old_stat
+
+    # Try to restore original file's permissions separately
+    # atomic_write does it itself, but it actually erases
+    # them if chown fails
+    begin
+      # Set correct permissions on new file
+      chown(old_stat.uid, nil)
+      chown(nil, old_stat.gid)
+    rescue Errno::EPERM, Errno::EACCES
+      # Changing file ownership failed, moving on.
+      nil
+    end
+    begin
+      # This operation will affect filesystem ACL's
+      chmod(old_stat.mode)
+    rescue Errno::EPERM, Errno::EACCES
+      # Changing file permissions failed, moving on.
+      nil
     end
   end
 
@@ -321,8 +347,8 @@ class Pathname
 
   # Writes an exec script that sets environment variables
   def write_env_script(target, env)
-    env_export = ""
-    env.each { |key, value| env_export += "#{key}=\"#{value}\" " }
+    env_export = +""
+    env.each { |key, value| env_export << "#{key}=\"#{value}\" " }
     dirname.mkpath
     write <<~SH
       #!/bin/bash

@@ -1,3 +1,11 @@
+# frozen_string_literal: true
+
+require "cmd/shared_examples/args_parse"
+
+describe "Homebrew.config_args" do
+  it_behaves_like "parseable arguments"
+end
+
 describe "brew config", :integration_test do
   it "prints information about the current Homebrew configuration" do
     expect { brew "config" }

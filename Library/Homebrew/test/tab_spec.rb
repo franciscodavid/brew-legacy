@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "tab"
 require "formula"
 
@@ -326,7 +328,7 @@ describe Tab do
       expect(tab.source["path"]).to eq(alias_path.to_s)
     end
 
-    it "creates a Tab for a given Formula" do
+    it "creates a Tab for a given Formula with existing Tab" do
       f.prefix.mkpath
       f_tab_path.write f_tab_content
 

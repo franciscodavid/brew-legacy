@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 require "ostruct"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -14,8 +16,8 @@ module Homebrew
         `brew unlink` <formula> `&&` <commands> `&& brew link` <formula>
       EOS
       switch "-n", "--dry-run",
-        description: "List all files which would be unlinked, but will not actually unlink or "\
-                     "delete any files."
+             description: "List all files which would be unlinked, but will not actually unlink or "\
+                          "delete any files."
       switch :verbose
       switch :debug
     end

@@ -1,4 +1,6 @@
-require "cli_parser"
+# frozen_string_literal: true
+
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -13,7 +15,7 @@ module Homebrew
         If no <end_ref> is provided it defaults to `origin/master`.
       EOS
       switch "--markdown",
-        description: "Print as a Markdown list."
+             description: "Print as a Markdown list."
     end
   end
 
@@ -49,7 +51,7 @@ module Homebrew
       end
     end
 
-    puts "Release notes between #{previous_tag} and #{end_ref}:"
+    $stderr.puts "Release notes between #{previous_tag} and #{end_ref}:"
     puts output
   end
 end

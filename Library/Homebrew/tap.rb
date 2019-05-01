@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "extend/cachable"
 require "readall"
 require "description_cache_store"
@@ -11,7 +13,7 @@ require "description_cache_store"
 class Tap
   extend Cachable
 
-  TAP_DIRECTORY = HOMEBREW_LIBRARY/"Taps"
+  TAP_DIRECTORY = (HOMEBREW_LIBRARY/"Taps").freeze
 
   def self.fetch(*args)
     case args.length
@@ -222,7 +224,7 @@ class Tap
 
   # Install this {Tap}.
   #
-  # @param [Hash] options
+  # @param  options [Hash]
   # @option options [String] :clone_target If passed, it will be used as the clone remote.
   # @option options [Boolean, nil] :force_auto_update If present, whether to override the
   #   logic that skips non-GitHub repositories during auto-updates.

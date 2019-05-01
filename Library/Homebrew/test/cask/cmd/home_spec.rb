@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "shared_examples/invalid_option"
 
 describe Cask::Cmd::Home, :cask do
@@ -19,7 +21,7 @@ describe Cask::Cmd::Home, :cask do
   end
 
   it "opens the project page when no Cask is specified" do
-    expect(described_class).to receive(:open_url).with("https://caskroom.github.io/")
+    expect(described_class).to receive(:open_url).with("https://brew.sh/")
     described_class.run
   end
 end

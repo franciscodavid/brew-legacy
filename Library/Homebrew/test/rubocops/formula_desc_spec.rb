@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rubocops/formula_desc"
 
 describe RuboCop::Cop::FormulaAudit::DescLength do
@@ -66,7 +68,7 @@ describe RuboCop::Cop::FormulaAuditStrict::Desc do
         class Foo < Formula
           url 'https://brew.sh/foo-1.0.tgz'
           desc 'An aardvark'
-                ^^^ Description shouldn\'t start with an indefinite article i.e. \"An\"
+                ^^^ Description shouldn\'t start with an indefinite article, i.e. \"An\"
         end
       RUBY
     end

@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require "formula_versions"
 require "migrator"
 require "formulary"
 require "descriptions"
 require "cleanup"
 require "description_cache_store"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -24,7 +26,7 @@ module Homebrew
         The Ruby implementation of `brew update`. Never called manually.
       EOS
       switch "--preinstall",
-        description: "Run in 'auto-update' mode (faster, less output)."
+             description: "Run in 'auto-update' mode (faster, less output)."
       switch :force
       switch :quiet
       switch :debug

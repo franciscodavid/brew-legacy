@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "formula"
 require "formula_versions"
 require "utils/curl"
@@ -8,7 +10,7 @@ require "style"
 require "date"
 require "missing_formula"
 require "digest"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -24,34 +26,34 @@ module Homebrew
         If no <formula> are provided, all of them are checked.
       EOS
       switch "--strict",
-        description: "Run additional style checks, including RuboCop style checks."
+             description: "Run additional style checks, including RuboCop style checks."
       switch "--online",
-        description: "Run additional slower style checks that require a network connection."
+             description: "Run additional slower style checks that require a network connection."
       switch "--new-formula",
-        description: "Run various additional style checks to determine if a new formula is eligible "\
-                     "for Homebrew. This should be used when creating new formula and implies "\
-                     "`--strict` and `--online`."
+             description: "Run various additional style checks to determine if a new formula is eligible "\
+                          "for Homebrew. This should be used when creating new formula and implies "\
+                          "`--strict` and `--online`."
       switch "--fix",
-        description: "Fix style violations automatically using RuboCop's auto-correct feature."
+             description: "Fix style violations automatically using RuboCop's auto-correct feature."
       switch "--display-cop-names",
-        description: "Include the RuboCop cop name for each violation in the output."
+             description: "Include the RuboCop cop name for each violation in the output."
       switch "--display-filename",
-        description: "Prefix every line of output with name of the file or formula being audited, to "\
-                     "make output easy to grep."
+             description: "Prefix every line of output with name of the file or formula being audited, to "\
+                          "make output easy to grep."
       switch "-D", "--audit-debug",
-        description: "Enable debugging and profiling of audit methods."
+             description: "Enable debugging and profiling of audit methods."
       comma_array "--only",
-        description: "Specify a comma-separated <method> list to only run the methods named "\
-                     "`audit_`<method>."
+                  description: "Specify a comma-separated <method> list to only run the methods named "\
+                               "`audit_`<method>."
       comma_array "--except",
-        description: "Specify a comma-separated <method> list to skip running the methods named "\
-                     "`audit_`<method>."
+                  description: "Specify a comma-separated <method> list to skip running the methods named "\
+                               "`audit_`<method>."
       comma_array "--only-cops",
-        description: "Specify a comma-separated <cops> list to check for violations of only the listed "\
-                     "RuboCop cops."
+                  description: "Specify a comma-separated <cops> list to check for violations of only the listed "\
+                               "RuboCop cops."
       comma_array "--except-cops",
-        description: "Specify a comma-separated <cops> list to skip checking for violations of the listed "\
-                     "RuboCop cops."
+                  description: "Specify a comma-separated <cops> list to skip checking for violations of the listed "\
+                               "RuboCop cops."
       switch :verbose
       switch :debug
       conflicts "--only", "--except"
@@ -530,9 +532,9 @@ module Homebrew
       return unless DevelopmentTools.curl_handles_most_https_certificates?
 
       if http_content_problem = curl_check_http_content(homepage,
-                                  user_agents:   [:browser, :default],
-                                  check_content: true,
-                                  strict:        @strict)
+                                                        user_agents:   [:browser, :default],
+                                                        check_content: true,
+                                                        strict:        @strict)
         problem http_content_problem
       end
     end
@@ -815,7 +817,7 @@ module Homebrew
       bin_names.each do |name|
         ["system", "shell_output", "pipe_output"].each do |cmd|
           if text =~ /test do.*#{cmd}[\(\s]+['"]#{Regexp.escape(name)}[\s'"]/m
-            problem %Q(fully scope test #{cmd} calls e.g. #{cmd} "\#{bin}/#{name}")
+            problem %Q(fully scope test #{cmd} calls, e.g. #{cmd} "\#{bin}/#{name}")
           end
         end
       end

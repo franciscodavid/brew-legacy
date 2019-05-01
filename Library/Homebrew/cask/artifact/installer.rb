@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "cask/artifact/abstract_artifact"
 
 require "extend/hash_validator"
@@ -6,17 +8,16 @@ using HashValidator
 module Cask
   module Artifact
     class Installer < AbstractArtifact
-      VALID_KEYS = Set.new [
-        :manual,
-        :script,
-      ]
+      VALID_KEYS = Set.new([
+                             :manual,
+                             :script,
+                           ]).freeze
 
       module ManualInstaller
         def install_phase(**)
           puts <<~EOS
             To complete the installation of Cask #{cask}, you must also
-            run the installer at
-
+            run the installer at:
               '#{cask.staged_path.join(path)}'
           EOS
         end

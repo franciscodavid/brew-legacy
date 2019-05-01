@@ -1,3 +1,11 @@
+# frozen_string_literal: true
+
+require "cmd/shared_examples/args_parse"
+
+describe "Homebrew.list_args" do
+  it_behaves_like "parseable arguments"
+end
+
 describe "brew list", :integration_test do
   let(:formulae) { %w[bar foo qux] }
 

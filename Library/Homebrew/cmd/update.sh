@@ -2,8 +2,11 @@
 #:
 #:  Fetch the newest version of Homebrew and all formulae from GitHub using `git`(1) and perform any necessary migrations.
 #:
-#:       --merge                         `git merge` is used to include updates (rather than `git rebase`).
-#:       --force                         Always do a slower, full update check (even if unnecessary).
+#:          --merge                      `git merge` is used to include updates (rather than `git rebase`).
+#:      -f, --force                      Always do a slower, full update check (even if unnecessary).
+#:      -v, --verbose                    Print the directories checked and `git` operations performed.
+#:      -d, --debug                      Display a trace of all shell commands as they are executed.
+#:      -h, --help                       Show this message.
 
 # Don't need shellcheck to follow this `source`.
 # shellcheck disable=SC1090
@@ -132,7 +135,7 @@ reset_on_interrupt() {
   exit 130
 }
 
-# Used for testing purposes, e.g., for testing formula migration after
+# Used for testing purposes, e.g. for testing formula migration after
 # renaming it in the currently checked-out branch. To test run
 # "brew update --simulate-from-current-branch"
 simulate_from_current_branch() {
@@ -306,6 +309,7 @@ homebrew-update() {
       -*)
         [[ "$option" = *v* ]] && HOMEBREW_VERBOSE=1
         [[ "$option" = *d* ]] && HOMEBREW_DEBUG=1
+        [[ "$option" = *f* ]] && HOMEBREW_UPDATE_FORCE=1
         ;;
       *)
         odie <<EOS

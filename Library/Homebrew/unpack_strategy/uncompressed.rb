@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 module UnpackStrategy
   class Uncompressed
     include UnpackStrategy
 
-    def extract_nestedly(extension_only: false, **options)
+    def extract_nestedly(prioritise_extension: false, **options)
       extract(**options)
     end
 

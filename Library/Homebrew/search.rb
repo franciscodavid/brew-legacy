@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "searchable"
 require "description_cache_store"
 
@@ -42,8 +44,8 @@ module Homebrew
           filename:  query,
           extension: "rb",
         )
-      rescue GitHub::Error => error
-        opoo "Error searching on GitHub: #{error}\n"
+      rescue GitHub::Error => e
+        opoo "Error searching on GitHub: #{e}\n"
         return results
       end
 

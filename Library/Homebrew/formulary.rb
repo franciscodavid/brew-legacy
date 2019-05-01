@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "digest/md5"
 require "extend/cachable"
 
@@ -29,12 +31,12 @@ module Formulary
 
     begin
       mod.const_get(class_name)
-    rescue NameError => original_exception
+    rescue NameError => e
       class_list = mod.constants
                       .map { |const_name| mod.const_get(const_name) }
                       .select { |const| const.is_a?(Class) }
-      e = FormulaClassUnavailableError.new(name, path, class_name, class_list)
-      raise e, "", original_exception.backtrace
+      new_exception = FormulaClassUnavailableError.new(name, path, class_name, class_list)
+      raise new_exception, "", e.backtrace
     end
   end
 
@@ -460,9 +462,13 @@ module Formulary
     if possible_pinned_tap_formulae.size == 1
       selected_formula = factory(possible_pinned_tap_formulae.first, spec)
       if core_path(ref).file?
+        odeprecated "brew tap-pin user/tap",
+                    "fully-scoped user/tap/formula naming"
         opoo <<~EOS
           #{ref} is provided by core, but is now shadowed by #{selected_formula.full_name}.
+          This behaviour is deprecated and will be removed in Homebrew 2.2.0.
           To refer to the core formula, use Homebrew/core/#{ref} instead.
+          To refer to the tap formula, use #{selected_formula.full_name} instead.
         EOS
       end
       selected_formula

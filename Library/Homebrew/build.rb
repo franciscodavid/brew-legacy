@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # This script is loaded by formula_installer as a separate instance.
 # Thrown exceptions are propagated back to the parent process over a pipe
 
@@ -125,7 +127,7 @@ class Build
         end
         if ARGV.interactive?
           ohai "Entering interactive mode"
-          puts "Type `exit' to return and finalize the installation"
+          puts "Type `exit` to return and finalize the installation"
           puts "Install to this prefix: #{formula.prefix}"
 
           if ARGV.git?

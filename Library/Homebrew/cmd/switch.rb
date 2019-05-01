@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 require "formula"
 require "keg"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function

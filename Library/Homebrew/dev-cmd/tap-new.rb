@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 require "tap"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -66,6 +68,8 @@ module Homebrew
             displayName: Run brew test-bot
     YAML
     write_path(tap, "azure-pipelines.yml", azure)
+    ohai "Created #{tap}"
+    puts tap.path.to_s
   end
 
   def write_path(tap, filename, content)

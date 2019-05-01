@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "shared_examples/requires_cask_token"
 require_relative "shared_examples/invalid_option"
 
@@ -33,7 +35,7 @@ describe Cask::Cmd::Create, :cask do
         version ''
         sha256 ''
 
-        url 'https://'
+        url "https://"
         name ''
         homepage ''
 

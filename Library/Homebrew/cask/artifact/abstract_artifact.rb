@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Cask
   module Artifact
     class AbstractArtifact
@@ -92,7 +94,7 @@ module Cask
         unless unknown_keys.empty?
           opoo "Unknown arguments to #{description} -- " \
                "#{unknown_keys.inspect} (ignored). Running " \
-               "\"brew update; brew cleanup\" will likely fix it."
+               "`brew update; brew cleanup` will likely fix it."
         end
         arguments.select! { |k| permitted_keys.include?(k) }
 

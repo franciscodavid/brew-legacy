@@ -1,3 +1,11 @@
+# frozen_string_literal: true
+
+require "cmd/shared_examples/args_parse"
+
+describe "Homebrew.edit_args" do
+  it_behaves_like "parseable arguments"
+end
+
 describe "brew edit", :integration_test do
   it "opens a given Formula in an editor" do
     HOMEBREW_REPOSITORY.cd do

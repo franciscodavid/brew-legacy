@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 module Cask
   class Cmd
     class Home < AbstractCommand
       def run
         if casks.none?
           odebug "Opening project homepage"
-          self.class.open_url "https://caskroom.github.io/"
+          self.class.open_url "https://brew.sh/"
         else
           casks.each do |cask|
             odebug "Opening homepage for Cask #{cask}"

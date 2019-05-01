@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "hardware"
 require "extend/ENV/shared"
 
@@ -6,7 +8,7 @@ module Stdenv
   include SharedEnvExtension
 
   # @private
-  SAFE_CFLAGS_FLAGS = "-w -pipe".freeze
+  SAFE_CFLAGS_FLAGS = "-w -pipe"
 
   # @private
   def setup_build_environment(formula = nil)
@@ -135,7 +137,7 @@ module Stdenv
     return if compiler_any_clang?
     return unless Hardware.is_32_bit?
 
-    # Can't mix "-march" for a 32-bit CPU  with "-arch x86_64"
+    # Can't mix "-march" for a 32-bit CPU with "-arch x86_64"
     replace_in_cflags(/-march=\S*/, "-Xarch_#{Hardware::CPU.arch_32_bit} \\0")
   end
 

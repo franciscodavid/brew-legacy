@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require "keg"
 require "formula"
 require "diagnostic"
 require "migrator"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -15,10 +17,10 @@ module Homebrew
         Uninstall <formula>.
       EOS
       switch :force,
-        description: "Delete all installed versions of the <formula>"
+             description: "Delete all installed versions of the <formula>"
       switch "--ignore-dependencies",
-        description: "Don't fail uninstall, even if <formula> is a dependency of any installed "\
-                     "formulae."
+             description: "Don't fail uninstall, even if <formula> is a dependency of any installed "\
+                          "formulae."
       switch :debug
     end
   end

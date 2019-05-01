@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 require "sandbox"
 require "formula_installer"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function

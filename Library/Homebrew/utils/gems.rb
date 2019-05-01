@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Never `require` anything in this file (except English). It needs to be able to
 # work as the first item in `brew.rb` so we can load gems with Bundler when
 # needed before anything else is loaded (e.g. `json`).
@@ -8,11 +10,12 @@ module Homebrew
   module_function
 
   def ruby_bindir
-    "#{RbConfig::CONFIG["prefix"]}/bin".freeze
+    "#{RbConfig::CONFIG["prefix"]}/bin"
   end
 
   def gem_user_bindir
-    "#{Gem.user_dir}/bin".freeze
+    require "rubygems"
+    "#{Gem.user_dir}/bin"
   end
 
   def ohai_if_defined(message)
@@ -39,6 +42,7 @@ module Homebrew
     ENV["GEM_PATH"] = ENV["GEM_HOME"]
 
     # Make RubyGems notice environment changes.
+    require "rubygems"
     Gem.clear_paths
     Gem::Specification.reset
 
@@ -54,7 +58,7 @@ module Homebrew
     setup_gem_environment! if setup_gem_environment
     return unless Gem::Specification.find_all_by_name(name, version).empty?
 
-    # Shell out to `gem` to avoid RubyGems requires e.g. loading JSON.
+    # Shell out to `gem` to avoid RubyGems requires for e.g. loading JSON.
     ohai_if_defined "Installing '#{name}' gem"
     install_args = %W[--no-document #{name}]
     install_args << "--version" << version if version
@@ -71,11 +75,12 @@ module Homebrew
 
     odie_if_defined <<~EOS
       the '#{name}' gem is installed but couldn't find '#{executable}' in the PATH:
-      #{ENV["PATH"]}
+        #{ENV["PATH"]}
     EOS
   end
 
   def install_bundler!
+    require "rubygems"
     setup_gem_environment!(gem_home: Gem.user_dir, gem_bindir: gem_user_bindir)
     install_gem_setup_path!("bundler", version: ">=2", executable: "bundle", setup_gem_environment: false)
   end
@@ -85,7 +90,7 @@ module Homebrew
 
     ENV["BUNDLE_GEMFILE"] = "#{ENV["HOMEBREW_LIBRARY"]}/Homebrew/Gemfile"
     @bundle_installed ||= begin
-      bundle = "#{gem_user_bindir}/bundle".freeze
+      bundle = "#{gem_user_bindir}/bundle"
       bundle_check_output = `#{bundle} check 2>&1`
       bundle_check_failed = !$CHILD_STATUS.exitstatus.zero?
 

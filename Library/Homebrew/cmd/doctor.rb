@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 require "diagnostic"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -16,9 +18,9 @@ module Homebrew
         an issue; just ignore this.
       EOS
       switch "--list-checks",
-        description: "List all audit methods."
+             description: "List all audit methods."
       switch "-D", "--audit-debug",
-        description: "Enable debugging and profiling of audit methods."
+             description: "Enable debugging and profiling of audit methods."
       switch :verbose
       switch :debug
     end

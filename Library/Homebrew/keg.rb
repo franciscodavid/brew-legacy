@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "keg_relocate"
 require "language/python"
 require "lock_file"
@@ -77,9 +79,9 @@ class Keg
 
   # Keep relatively in sync with
   # https://github.com/Homebrew/install/blob/master/install
-  MUST_EXIST_DIRECTORIES = MUST_EXIST_SUBDIRECTORIES + [
+  MUST_EXIST_DIRECTORIES = (MUST_EXIST_SUBDIRECTORIES + [
     HOMEBREW_CELLAR,
-  ].uniq.sort.freeze
+  ].sort.uniq).freeze
   MUST_BE_WRITABLE_DIRECTORIES = (
     %w[
       etc/bash_completion.d lib/pkgconfig
@@ -187,8 +189,8 @@ class Keg
   extend Forwardable
 
   def_delegators :path,
-    :to_s, :hash, :abv, :disk_usage, :file_count, :directory?, :exist?, :/,
-    :join, :rename, :find
+                 :to_s, :hash, :abv, :disk_usage, :file_count, :directory?, :exist?, :/,
+                 :join, :rename, :find
 
   def initialize(path)
     path = path.resolved_path if path.to_s.start_with?("#{HOMEBREW_PREFIX}/opt/")

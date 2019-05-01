@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 class IO
   def readline_nonblock(sep = $INPUT_RECORD_SEPARATOR)
-    line = ""
-    buffer = ""
+    line = +""
+    buffer = +""
 
     loop do
       break if buffer == sep
@@ -10,10 +12,10 @@ class IO
       line.concat(buffer)
     end
 
-    line
+    line.freeze
   rescue IO::WaitReadable, EOFError => e
     raise e if line.empty?
 
-    line
+    line.freeze
   end
 end

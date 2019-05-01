@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "shared_examples/requires_cask_token"
 require_relative "shared_examples/invalid_option"
 
@@ -83,8 +85,7 @@ describe Cask::Cmd::Info, :cask do
 
       Custom text via puts followed by DSL-generated text:
       To use with-caveats, you may need to add the /custom/path/bin directory
-      to your PATH environment variable, eg (for bash shell):
-
+      to your PATH environment variable, e.g. (for bash shell):
         export PATH=/custom/path/bin:"$PATH"
 
     EOS
@@ -137,7 +138,7 @@ describe Cask::Cmd::Info, :cask do
     EOS
   end
 
-  it "can run be run with a url twice" do
+  it "can run be run with a url twice", :needs_network do
     expect {
       described_class.run("https://raw.githubusercontent.com/Homebrew/homebrew-cask" \
                           "/d0b2c58652ae5eff20a7a4ac93292a08b250912b/Casks/docker.rb")

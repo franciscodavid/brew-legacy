@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "shellwords"
 
 class UsageError < RuntimeError
@@ -189,7 +191,7 @@ class TapFormulaAmbiguityError < RuntimeError
     super <<~EOS
       Formulae found in multiple taps: #{formulae.map { |f| "\n       * #{f}" }.join}
 
-      Please use the fully-qualified name e.g. #{formulae.first} to refer the formula.
+      Please use the fully-qualified name (e.g. #{formulae.first}) to refer to the formula.
     EOS
   end
 end
@@ -209,7 +211,7 @@ class TapFormulaWithOldnameAmbiguityError < RuntimeError
     super <<~EOS
       Formulae with '#{name}' old name found in multiple taps: #{taps.map { |t| "\n       * #{t}" }.join}
 
-      Please use the fully-qualified name e.g. #{taps.first}/#{name} to refer the formula or use its new name.
+      Please use the fully-qualified name (e.g. #{taps.first}/#{name}) to refer to the formula or use its new name.
     EOS
   end
 end
@@ -333,7 +335,7 @@ class FormulaConflictError < RuntimeError
 
       Unlinking removes a formula's symlinks from #{HOMEBREW_PREFIX}. You can
       link the formula again after the install finishes. You can --force this
-      install, but the build may fail or cause obscure side-effects in the
+      install, but the build may fail or cause obscure side effects in the
       resulting software.
     EOS
     message.join("\n")
@@ -403,12 +405,12 @@ class BuildError < RuntimeError
       elsif issues_url = formula.tap.issues_url
         puts <<~EOS
           If reporting this issue please do so at (not Homebrew/brew or Homebrew/core):
-          #{Formatter.url(issues_url)}
+            #{Formatter.url(issues_url)}
         EOS
       else
         puts <<~EOS
           If reporting this issue please do so to (not Homebrew/brew or Homebrew/core):
-          #{formula.tap}
+            #{formula.tap}
         EOS
       end
     else
@@ -419,7 +421,7 @@ class BuildError < RuntimeError
 
     puts
 
-    unless issues&.empty?
+    if issues.present?
       puts "These open issues may also help:"
       puts issues.map { |i| "#{i["title"]} #{i["html_url"]}" }.join("\n")
     end
@@ -512,13 +514,6 @@ class CurlDownloadStrategyError < RuntimeError
   end
 end
 
-# Raised in {ScpDownloadStrategy#fetch}.
-class ScpDownloadStrategyError < RuntimeError
-  def initialize(cause)
-    super "Download failed: #{cause}"
-  end
-end
-
 # Raised by {#safe_system} in `utils.rb`.
 class ErrorDuringExecution < RuntimeError
   attr_reader :cmd
@@ -536,7 +531,7 @@ class ErrorDuringExecution < RuntimeError
       status
     end
 
-    s = "Failure while executing; `#{cmd.shelljoin.gsub(/\\=/, "=")}` exited with #{exitstatus}."
+    s = +"Failure while executing; `#{cmd.shelljoin.gsub(/\\=/, "=")}` exited with #{exitstatus}."
 
     unless [*output].empty?
       format_output_line = lambda do |type_line|
@@ -553,7 +548,11 @@ class ErrorDuringExecution < RuntimeError
       s << "\n" unless s.end_with?("\n")
     end
 
-    super s
+    super s.freeze
+  end
+
+  def stderr
+    [*output].select { |type,| type == :stderr }.map(&:last).join
   end
 end
 
@@ -571,8 +570,8 @@ class ChecksumMismatchError < RuntimeError
     super <<~EOS
       #{@hash_type} mismatch
       Expected: #{expected}
-      Actual: #{actual}
-      Archive: #{fn}
+        Actual: #{actual}
+       Archive: #{fn}
       To retry an incomplete download, remove the file above.
     EOS
   end

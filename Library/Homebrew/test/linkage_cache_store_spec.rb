@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "linkage_cache_store"
 
 describe LinkageCacheStore do
@@ -8,21 +10,15 @@ describe LinkageCacheStore do
 
   describe "#keg_exists?" do
     context "`keg_name` exists in cache" do
-      before do
-        expect(database).to receive(:get).with(keg_name).and_return("")
-      end
-
       it "returns `true`" do
+        expect(database).to receive(:get).with(keg_name).and_return("")
         expect(subject.keg_exists?).to be(true)
       end
     end
 
     context "`keg_name` does not exist in cache" do
-      before do
-        expect(database).to receive(:get).with(keg_name).and_return(nil)
-      end
-
       it "returns `false`" do
+        expect(database).to receive(:get).with(keg_name).and_return(nil)
         expect(subject.keg_exists?).to be(false)
       end
     end
@@ -52,11 +48,8 @@ describe LinkageCacheStore do
 
   describe "#fetch" do
     context "`HASH_LINKAGE_TYPES.include?(type)`" do
-      before do
-        expect(database).to receive(:get).with(keg_name).and_return(nil)
-      end
-
       it "returns a `Hash` of values" do
+        expect(database).to receive(:get).with(keg_name).and_return(nil)
         expect(subject.fetch(:keg_files_dylibs)).to be_an_instance_of(Hash)
       end
     end

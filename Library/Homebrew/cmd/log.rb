@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 require "formula"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -12,13 +14,13 @@ module Homebrew
         Show the `git log` for the given <formula>.
       EOS
       switch "-p", "-u", "--patch",
-        description: "Also output patch from commit."
+             description: "Also output patch from commit."
       switch "--stat",
-        description: "Also output diffstat from commit."
+             description: "Also output diffstat from commit."
       switch "--oneline",
-        description: "Output only one line per commit."
+             description: "Output only one line per commit."
       switch "-1", "--max-count=1",
-        description: "Output only one commit."
+             description: "Output only one commit."
     end
   end
 
@@ -56,6 +58,6 @@ module Homebrew
     end
     args = ARGV.options_only
     args += ["--follow", "--", path] unless path.nil?
-    exec "git", "log", *args
+    system "git", "log", *args
   end
 end

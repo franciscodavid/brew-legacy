@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # TODO: this test should be named after the corresponding class, once
 #       that class is abstracted from installer.rb
 describe "Satisfy Dependencies and Requirements", :cask do
@@ -8,6 +10,15 @@ describe "Satisfy Dependencies and Requirements", :cask do
   }
 
   describe "depends_on cask" do
+    let(:dependency) { Cask::CaskLoader.load(cask.depends_on.cask.first) }
+    let(:cask) { Cask::CaskLoader.load(cask_path("with-depends-on-cask")) }
+
+    it "installs the dependency of a Cask and the Cask itself" do
+      expect(subject).not_to raise_error
+      expect(cask).to be_installed
+      expect(dependency).to be_installed
+    end
+
     context "when depends_on cask is cyclic" do
       let(:cask) { Cask::CaskLoader.load(cask_path("with-depends-on-cask-cyclic")) }
 
@@ -18,17 +29,6 @@ describe "Satisfy Dependencies and Requirements", :cask do
           "on other Casks: with-depends-on-cask-cyclic-helper",
         )
       }
-    end
-
-    context do
-      let(:cask) { Cask::CaskLoader.load(cask_path("with-depends-on-cask")) }
-      let(:dependency) { Cask::CaskLoader.load(cask.depends_on.cask.first) }
-
-      it "installs the dependency of a Cask and the Cask itself" do
-        expect(subject).not_to raise_error
-        expect(cask).to be_installed
-        expect(dependency).to be_installed
-      end
     end
   end
 

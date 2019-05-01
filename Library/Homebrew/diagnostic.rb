@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "keg"
 require "language/python"
 require "formula"
@@ -60,7 +62,7 @@ module Homebrew
     class Checks
       ############# HELPERS
       # Finds files in `HOMEBREW_PREFIX` *and* /usr/local.
-      # Specify paths relative to a prefix e.g. "include/foo.h".
+      # Specify paths relative to a prefix, e.g. "include/foo.h".
       # Sets @found for your convenience.
       def find_relative_paths(*relative_paths)
         @found = [HOMEBREW_PREFIX, "/usr/local"].uniq.reduce([]) do |found, prefix|
@@ -69,7 +71,8 @@ module Homebrew
       end
 
       def inject_file_list(list, string)
-        list.reduce(string) { |acc, elem| acc << "  #{elem}\n" }
+        list.reduce(string.dup) { |acc, elem| acc << "  #{elem}\n" }
+            .freeze
       end
       ############# END HELPERS
 
@@ -158,7 +161,7 @@ module Homebrew
 
         <<~EOS
           Anaconda is known to frequently break Homebrew builds, including Vim and
-          MacVim, due to bundling many duplicates of system and Homebrew-available
+          MacVim, due to bundling many duplicates of system and Homebrew-provided
           tools.
 
           If you encounter a build failure please temporarily remove Anaconda
@@ -350,6 +353,9 @@ module Homebrew
 
           You should change the ownership of these directories to your user.
             sudo chown -R $(whoami) #{not_writable_dirs.join(" ")}
+
+          And make sure that your user has write permission.
+            chmod u+w #{not_writable_dirs.join(" ")}
         EOS
       end
 
@@ -386,9 +392,6 @@ module Homebrew
                   /usr/bin occurs before #{HOMEBREW_PREFIX}/bin
                   This means that system-provided programs will be used instead of those
                   provided by Homebrew. The following tools exist at both paths:
-                EOS
-
-                message += <<~EOS
 
                   Consider setting your PATH so that #{HOMEBREW_PREFIX}/bin
                   occurs before /usr/bin. Here is a one-liner:
@@ -411,7 +414,7 @@ module Homebrew
 
         <<~EOS
           Homebrew's bin was not found in your PATH.
-          Consider setting the PATH for example like so
+          Consider setting the PATH for example like so:
             #{Utils::Shell.prepend_path_in_profile("#{HOMEBREW_PREFIX}/bin")}
         EOS
       end
@@ -426,7 +429,7 @@ module Homebrew
         <<~EOS
           Homebrew's sbin was not found in your PATH but you have installed
           formulae that put executables in #{HOMEBREW_PREFIX}/sbin.
-          Consider setting the PATH for example like so
+          Consider setting the PATH for example like so:
             #{Utils::Shell.prepend_path_in_profile("#{HOMEBREW_PREFIX}/sbin")}
         EOS
       end
@@ -460,11 +463,11 @@ module Homebrew
         inject_file_list scripts, <<~EOS
           "config" scripts exist outside your system or Homebrew directories.
           `./configure` scripts often look for *-config scripts to determine if
-          software packages are installed, and what additional flags to use when
+          software packages are installed, and which additional flags to use when
           compiling and linking.
 
           Having additional scripts in your path can confuse software installed via
-          Homebrew if the config script overrides a system or Homebrew provided
+          Homebrew if the config script overrides a system or Homebrew-provided
           script of the same name. We found the following "config" scripts:
         EOS
       end
@@ -505,13 +508,13 @@ module Homebrew
           (B) Symlink "bin/brew" into your prefix, but don't symlink "Cellar".
 
           Older installations of Homebrew may have created a symlinked Cellar, but this can
-          cause problems when two formula install to locations that are mapped on top of each
+          cause problems when two formulae install to locations that are mapped on top of each
           other during the linking step.
         EOS
       end
 
       def check_git_version
-        minimum_version = ENV["HOMEBREW_MINIMUM_GIT_VERSION"].freeze
+        minimum_version = ENV["HOMEBREW_MINIMUM_GIT_VERSION"]
         return unless Utils.git_available?
         return if Version.create(Utils.git_version) >= Version.create(minimum_version)
 
@@ -577,7 +580,7 @@ module Homebrew
         return if branch.nil? || branch =~ /master/
 
         <<~EOS
-          #{CoreTap.instance.full_name} is not on the master branch
+          #{CoreTap.instance.full_name} is not on the master branch.
 
           Check out the master branch by running:
             git -C "$(brew --repo homebrew/core)" checkout master
@@ -622,7 +625,7 @@ module Homebrew
         return if frameworks_found.empty?
 
         inject_file_list frameworks_found, <<~EOS
-          Some frameworks can be picked up by CMake's build system and likely
+          Some frameworks can be picked up by CMake's build system and will likely
           cause the build to fail. To compile CMake, you may wish to move these
           out of the way:
         EOS
@@ -663,7 +666,7 @@ module Homebrew
         end
 
         <<~EOS
-          You have uncommitted modifications to Homebrew
+          You have uncommitted modifications to Homebrew.
           If this is a surprise to you, then you should stash these modifications.
           Stashing returns Homebrew to a pristine state but can be undone
           should you later need to do so for some reason.
@@ -710,6 +713,27 @@ module Homebrew
         EOS
       end
 
+      def check_for_unreadable_installed_formula
+        formula_unavailable_exceptions = []
+        Formula.racks.each do |rack|
+          begin
+            Formulary.from_rack(rack)
+          rescue FormulaUnreadableError, FormulaClassUnavailableError,
+                 TapFormulaUnreadableError, TapFormulaClassUnavailableError => e
+            formula_unavailable_exceptions << e
+          rescue FormulaUnavailableError,
+                 TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
+            nil
+          end
+        end
+        return if formula_unavailable_exceptions.empty?
+
+        <<~EOS
+          Some installed formulae are not readable:
+            #{formula_unavailable_exceptions.join("\n\n  ")}
+        EOS
+      end
+
       def check_for_unlinked_but_not_keg_only
         unlinked = Formula.racks.reject do |rack|
           if !(HOMEBREW_LINKED_KEGS/rack.basename).directory?
@@ -725,7 +749,7 @@ module Homebrew
         return if unlinked.empty?
 
         inject_file_list unlinked, <<~EOS
-          You have unlinked kegs in your Cellar
+          You have unlinked kegs in your Cellar.
           Leaving kegs unlinked can lead to build-trouble and cause brews that depend on
           those kegs to fail to run properly once built. Run `brew link` on these:
         EOS
@@ -751,7 +775,7 @@ module Homebrew
         message = "You have external commands with conflicting names.\n"
         cmd_map.each do |cmd_name, cmd_paths|
           message += inject_file_list cmd_paths, <<~EOS
-            Found command `#{cmd_name}` in following places:
+            Found command `#{cmd_name}` in the following places:
           EOS
         end
 
@@ -777,7 +801,7 @@ module Homebrew
 
         bad_tap_files.keys.map do |tap|
           <<~EOS
-            Found Ruby file outside #{tap} tap formula directory
+            Found Ruby file outside #{tap} tap formula directory.
             (#{tap.formula_dir}):
               #{bad_tap_files[tap].join("\n  ")}
           EOS

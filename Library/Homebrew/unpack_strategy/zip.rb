@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module UnpackStrategy
   class Zip
     include UnpackStrategy
@@ -13,6 +15,10 @@ module UnpackStrategy
     end
 
     private
+
+    def contains_extended_attributes?(path)
+      path.zipinfo.grep(/(^__MACOSX|\._)/).any?
+    end
 
     def extract_to_dir(unpack_dir, basename:, verbose:)
       quiet_flags = verbose ? [] : ["-qq"]

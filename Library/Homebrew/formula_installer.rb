@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "cxxstdlib"
 require "formula"
 require "keg"
@@ -15,6 +17,7 @@ require "cache_store"
 require "linkage_checker"
 require "install"
 require "messages"
+require "cask/cask_loader"
 
 class FormulaInstaller
   include FormulaCellarChecks
@@ -66,6 +69,10 @@ class FormulaInstaller
 
   def self.attempted
     @attempted ||= Set.new
+  end
+
+  def self.clear_attempted
+    @attempted = Set.new
   end
 
   # When no build tools are available and build flags are passed through ARGV,
@@ -189,8 +196,8 @@ class FormulaInstaller
     return if pinned_unsatisfied_deps.empty?
 
     raise CannotInstallFormulaError,
-      "You must `brew unpin #{pinned_unsatisfied_deps * " "}` as installing " \
-      "#{formula.full_name} requires the latest version of pinned dependencies"
+          "You must `brew unpin #{pinned_unsatisfied_deps * " "}` as installing " \
+          "#{formula.full_name} requires the latest version of pinned dependencies"
   end
 
   def build_bottle_preinstall
@@ -220,14 +227,14 @@ class FormulaInstaller
       EOS
       if formula.outdated? && !formula.head?
         message += <<~EOS
-          To upgrade to #{formula.pkg_version}, run `brew upgrade #{formula.name}`
+          To upgrade to #{formula.pkg_version}, run `brew upgrade #{formula.name}`.
         EOS
       elsif only_deps?
         message = nil
       else
         # some other version is already installed *and* linked
         message += <<~EOS
-          To install #{formula.pkg_version}, first run `brew unlink #{formula.name}`
+          To install #{formula.pkg_version}, first run `brew unlink #{formula.name}`.
         EOS
       end
       raise CannotInstallFormulaError, message if message
@@ -659,11 +666,11 @@ class FormulaInstaller
   end
 
   def summary
-    s = ""
+    s = +""
     s << "#{Emoji.install_badge}  " if Emoji.enabled?
     s << "#{formula.prefix.resolved_path}: #{formula.prefix.abv}"
     s << ", built in #{pretty_duration build_time}" if build_time
-    s
+    s.freeze
   end
 
   def build_time
@@ -870,7 +877,7 @@ class FormulaInstaller
   rescue Exception => e # rubocop:disable Lint/RescueException
     onoe "Failed to fix install linkage"
     puts "The formula built, but you may encounter issues using it or linking other"
-    puts "formula against it."
+    puts "formulae against it."
     ohai e, e.backtrace if debug?
     Homebrew.failed = true
     @show_summary_heading = true

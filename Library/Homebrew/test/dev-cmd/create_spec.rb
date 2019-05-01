@@ -1,3 +1,11 @@
+# frozen_string_literal: true
+
+require "cmd/shared_examples/args_parse"
+
+describe "Homebrew.create_args" do
+  it_behaves_like "parseable arguments"
+end
+
 describe "brew create", :integration_test do
   let(:url) { "file://#{TEST_FIXTURE_DIR}/tarballs/testball-0.1.tbz" }
   let(:formula_file) { CoreTap.new.formula_dir/"testball.rb" }

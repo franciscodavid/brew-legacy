@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 raise "HOMEBREW_BREW_FILE was not exported! Please call bin/brew directly!" unless ENV["HOMEBREW_BREW_FILE"]
 
 std_trap = trap("INT") { exit! 130 } # no backtrace thanks
@@ -70,7 +72,7 @@ begin
       if internal_dev_cmd && !ARGV.homebrew_developer?
         if (HOMEBREW_REPOSITORY/".git/config").exist?
           system "git", "config", "--file=#{HOMEBREW_REPOSITORY}/.git/config",
-                                  "--replace-all", "homebrew.devcmdrun", "true"
+                 "--replace-all", "homebrew.devcmdrun", "true"
         end
         ENV["HOMEBREW_DEV_CMD_RUN"] = "1"
       end
@@ -96,8 +98,6 @@ begin
     # `Homebrew.help` never returns, except for external/unknown commands.
   end
 
-  odisabled("HOMEBREW_BUILD_FROM_SOURCE", "--build-from-source") if ENV["HOMEBREW_BUILD_FROM_SOURCE"]
-
   if internal_cmd
     Homebrew.send cmd.to_s.tr("-", "_").downcase
   elsif which "brew-#{cmd}"
@@ -113,12 +113,15 @@ begin
 
     odie "Unknown command: #{cmd}" if !possible_tap || possible_tap.installed?
 
-    brew_uid = HOMEBREW_BREW_FILE.stat.uid
-    tap_commands = []
-    tap_commands += %W[/usr/bin/sudo -u ##{brew_uid}] if Process.uid.zero? && !brew_uid.zero?
     # Unset HOMEBREW_HELP to avoid confusing the tap
     ENV.delete("HOMEBREW_HELP") if help_flag
-    tap_commands += %W[#{HOMEBREW_BREW_FILE} tap #{possible_tap}]
+    tap_commands = []
+    cgroup = Utils.popen_read("cat", "/proc/1/cgroup")
+    if !cgroup.include?("azpl_job") && !cgroup.include?("docker")
+      brew_uid = HOMEBREW_BREW_FILE.stat.uid
+      tap_commands += %W[/usr/bin/sudo -u ##{brew_uid}] if Process.uid.zero? && !brew_uid.zero?
+    end
+    tap_commands += %W[#{HOMEBREW_BREW_FILE} tap #{possible_tap.name}]
     safe_system(*tap_commands)
     ENV["HOMEBREW_HELP"] = "1" if help_flag
     exec HOMEBREW_BREW_FILE, cmd, *ARGV

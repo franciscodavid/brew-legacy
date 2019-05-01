@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 require "ostruct"
 require "caveats"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -15,12 +17,12 @@ module Homebrew
         installations.
       EOS
       switch "--overwrite",
-        description: "Delete files already existing in the prefix while linking."
+             description: "Delete files already existing in the prefix while linking."
       switch "-n", "--dry-run",
-        description: "List all files which would be linked or deleted by "\
-                     "`brew link --overwrite`, but will not actually link or delete any files."
+             description: "List all files which would be linked or deleted by "\
+                          "`brew link --overwrite`, but will not actually link or delete any files."
       switch :force,
-        description: "Allow only key-only formulae to be linked."
+             description: "Allow only key-only formulae to be linked."
       switch :verbose
       switch :debug
     end

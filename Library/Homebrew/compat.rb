@@ -1,2 +1,3 @@
-require "compat/os/mac"
-require "compat/formula"
+# frozen_string_literal: true
+
+require "compat/cask/dsl/version"

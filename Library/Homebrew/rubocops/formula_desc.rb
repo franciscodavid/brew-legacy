@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rubocops/extend/formula"
 require "extend/string"
 
@@ -78,7 +80,7 @@ module RuboCop
 
           # Check if a/an are used in a formula's desc
           if match = regex_match_group(desc, /^(an?)\s/i)
-            problem "Description shouldn't start with an indefinite article i.e. \"#{match.to_s.strip}\""
+            problem "Description shouldn't start with an indefinite article, i.e. \"#{match.to_s.strip}\""
           end
 
           # Check if invalid uppercase words are at the start of a

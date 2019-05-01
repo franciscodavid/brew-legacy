@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "tempfile"
 require "utils/shell"
 require "os/linux/diagnostic"
@@ -63,8 +65,8 @@ module Homebrew
 
         <<~EOS
           umask is currently set to 000. Directories created by Homebrew cannot
-          be world-writable. This issue can be resolved by adding umask 002 to
-          your #{shell_profile}
+          be world-writable. This issue can be resolved by adding "umask 002" to
+          your #{shell_profile}:
             echo 'umask 002' >> #{shell_profile}
         EOS
       end

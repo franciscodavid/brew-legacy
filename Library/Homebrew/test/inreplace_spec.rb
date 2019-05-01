@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 require "extend/string"
 require "tempfile"
 require "utils/inreplace"
 
 describe StringInreplaceExtension do
-  subject { string.extend(described_class) }
+  subject { string.dup.extend(described_class) }
 
   describe "#change_make_var!" do
     context "flag" do
@@ -232,7 +234,7 @@ describe Utils::Inreplace do
     }.to raise_error(Utils::InreplaceError)
   end
 
-  it "raises error if there is nothing to replace" do
+  it "raises error if there is nothing to replace in block form" do
     expect {
       described_class.inreplace(file.path) do |s|
         s.gsub!("d", "f") # rubocop:disable Performance/StringReplacement
@@ -240,7 +242,7 @@ describe Utils::Inreplace do
     }.to raise_error(Utils::InreplaceError)
   end
 
-  it "raises error if there is nothing to replace" do
+  it "raises error if there is no make variables to replace" do
     expect {
       described_class.inreplace(file.path) do |s|
         s.change_make_var! "VAR", "value"

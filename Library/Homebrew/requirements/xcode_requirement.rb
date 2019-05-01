@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "requirement"
 
 class XcodeRequirement < Requirement
@@ -20,16 +22,18 @@ class XcodeRequirement < Requirement
   def message
     version = " #{@version}" if @version
     message = <<~EOS
-      A full installation of Xcode.app#{version} is required to compile this software.
-      Installing just the Command Line Tools is not sufficient.
+      A full installation of Xcode.app#{version} is required to compile
+      this software. Installing just the Command Line Tools is not sufficient.
     EOS
     if @version && Version.new(MacOS::Xcode.latest_version) < Version.new(@version)
       message + <<~EOS
+
         Xcode#{version} cannot be installed on macOS #{MacOS.version}.
         You must upgrade your version of macOS.
       EOS
     else
       message + <<~EOS
+
         Xcode can be installed from the App Store.
       EOS
     end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Keg
   class << self
     undef file_linked_libraries
@@ -72,7 +74,8 @@ class Keg
 
         # If none of the install names reference RPATH(s), then we can safely
         # remove all RPATHs from the file.
-        if file.dynamically_linked_libraries.none? { |lib| lib.start_with?("@rpath") }
+        if ENV["HOMEBREW_RELOCATE_METAVARS"] &&
+           file.dynamically_linked_libraries.none? { |lib| lib.start_with?("@rpath") }
           # Note: This could probably be made more efficient by reverse-sorting
           # the RPATHs by offset and calling MachOFile#delete_command
           # with repopulate: false.
@@ -120,6 +123,7 @@ class Keg
   def each_install_name_for(file, &block)
     dylibs = file.dynamically_linked_libraries
     dylibs.reject! { |fn| fn =~ /^@(loader|executable)_path/ }
+    dylibs.reject! { |fn| fn =~ /^@rpath/ } unless ENV["HOMEBREW_RELOCATE_METAVARS"]
     dylibs.each(&block)
   end
 

@@ -1,4 +1,8 @@
+# frozen_string_literal: true
+
 require "open3"
+
+require "formula_installer"
 
 RSpec::Matchers.define_negated_matcher :be_a_failure, :be_a_success
 
@@ -87,6 +91,7 @@ RSpec.shared_context "integration test" do
         "-I", $LOAD_PATH.join(File::PATH_SEPARATOR)
       ]
       if ENV["HOMEBREW_TESTS_COVERAGE"]
+        require "rubygems"
         simplecov_spec = Gem.loaded_specs["simplecov"]
         specs = [simplecov_spec]
         simplecov_spec.runtime_dependencies.each do |dep|
@@ -140,7 +145,7 @@ RSpec.shared_context "integration test" do
           (prefix/"foo"/"test").write("test") if build.with? "foo"
           prefix.install Dir["*"]
           (buildpath/"test.c").write \
-            "#include <stdio.h>\\nint main(){return printf(\\"test\\");}"
+            "#include <stdio.h>\\nint main(){printf(\\"test\\");return 0;}"
           bin.mkpath
           system ENV.cc, "test.c", "-o", bin/"test"
         end
@@ -173,6 +178,28 @@ RSpec.shared_context "integration test" do
     end
   end
 
+  def install_test_formula(name, content = nil, build_bottle: false)
+    setup_test_formula(name, content)
+    fi = FormulaInstaller.new(Formula[name])
+    fi.build_bottle = build_bottle
+    fi.prelude
+    fi.install
+    fi.finish
+  end
+
+  def setup_test_tap
+    path = Tap::TAP_DIRECTORY/"homebrew/homebrew-foo"
+    path.mkpath
+    path.cd do
+      system "git", "init"
+      system "git", "remote", "add", "origin", "https://github.com/Homebrew/homebrew-foo"
+      FileUtils.touch "readme"
+      system "git", "add", "--all"
+      system "git", "commit", "-m", "init"
+    end
+    path
+  end
+
   def setup_remote_tap(name)
     Tap.fetch(name).tap do |tap|
       next if tap.installed?
@@ -194,7 +221,7 @@ RSpec.shared_context "integration test" do
       system "git", "init"
       system "git", "add", "--all"
       system "git", "commit", "-m",
-        "#{old_name.capitalize} has not yet been renamed"
+             "#{old_name.capitalize} has not yet been renamed"
 
       brew "install", old_name
 
@@ -203,7 +230,7 @@ RSpec.shared_context "integration test" do
 
       system "git", "add", "--all"
       system "git", "commit", "-m",
-        "#{old_name.capitalize} has been renamed to #{new_name.capitalize}"
+             "#{old_name.capitalize} has been renamed to #{new_name.capitalize}"
     end
   end
 

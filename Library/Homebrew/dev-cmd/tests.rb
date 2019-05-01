@@ -1,4 +1,6 @@
-require "cli_parser"
+# frozen_string_literal: true
+
+require "cli/parser"
 require "fileutils"
 
 module Homebrew
@@ -12,19 +14,19 @@ module Homebrew
         Run Homebrew's unit and integration tests.
       EOS
       switch "--coverage",
-        description: "Generate code coverage reports."
+             description: "Generate code coverage reports."
       switch "--generic",
-        description: "Run only OS-agnostic tests."
+             description: "Run only OS-agnostic tests."
       switch "--no-compat",
-        description: "Do not load the compatibility layer when running tests."
+             description: "Do not load the compatibility layer when running tests."
       switch "--online",
-        description: "Include tests that use the GitHub API and tests that use any of the taps for "\
-                     "official external commands."
+             description: "Include tests that use the GitHub API and tests that use any of the taps for "\
+                          "official external commands."
       flag   "--only=",
-        description: "Run only <test_script>`_spec.rb`. Appending `:`<line_number> will start at a "\
-                     "specific line."
+             description: "Run only <test_script>`_spec.rb`. Appending `:`<line_number> will start at a "\
+                          "specific line."
       flag   "--seed=",
-        description: "Randomise tests with the provided <value> instead of a random seed."
+             description: "Randomise tests with the provided <value> instead of a random seed."
       switch :verbose
       switch :debug
     end
@@ -55,7 +57,7 @@ module Homebrew
 
       ENV["USER"] ||= system_command!("id", args: ["-nu"]).stdout.chomp
 
-      # Avoid local configuration messing with tests e.g. git being configured
+      # Avoid local configuration messing with tests, e.g. git being configured
       # to use GPG to sign by default
       ENV["HOME"] = "#{HOMEBREW_LIBRARY_PATH}/test"
 

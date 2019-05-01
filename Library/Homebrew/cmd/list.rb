@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 require "metafiles"
 require "formula"
-require "cli_parser"
+require "cli/parser"
 
 module Homebrew
   module_function
@@ -13,31 +15,31 @@ module Homebrew
         List all installed formulae.
       EOS
       switch "--full-name",
-        description: "Print formulae with fully-qualified names. If `--full-name` is not "\
-                     "passed, other options (i.e. `-1`, `-l`, `-t` and `-r`) are passed to `ls` "\
-                     "which produces the actual output."
+             description: "Print formulae with fully-qualified names. If `--full-name` is not "\
+                          "passed, other options (i.e. `-1`, `-l`, `-t` and `-r`) are passed to `ls` "\
+                          "which produces the actual output."
       switch "--unbrewed",
-        description: "List all files in the Homebrew prefix not installed by Homebrew."
+             description: "List all files in the Homebrew prefix not installed by Homebrew."
       switch "--versions",
-        description: "Show the version number for installed formulae, or only the specified "\
-                     "formulae if <formula> are given."
+             description: "Show the version number for installed formulae, or only the specified "\
+                          "formulae if <formula> are given."
       switch "--multiple",
-        depends_on:  "--versions",
-        description: "Only show formulae with multiple versions installed."
+             depends_on:  "--versions",
+             description: "Only show formulae with multiple versions installed."
       switch "--pinned",
-        description: "Show the versions of pinned formulae, or only the specified (pinned) "\
-                     "formulae if <formula> are given. See also `pin`, `unpin`."
+             description: "Show the versions of pinned formulae, or only the specified (pinned) "\
+                          "formulae if <formula> are given. See also `pin`, `unpin`."
       # passed through to ls
       switch "-1",
-        description: "Force output to be one entry per line. " \
-                     "This is the default when output is not to a terminal."
+             description: "Force output to be one entry per line. " \
+                          "This is the default when output is not to a terminal."
       switch "-l",
-        description: "List in long format. If the output is to a terminal, "\
-                     "a total sum for all the file sizes is output on a line before the long listing."
+             description: "List in long format. If the output is to a terminal, "\
+                          "a total sum for all the file sizes is output on a line before the long listing."
       switch "-r",
-        description: "Reverse the order of the sort to get the oldest entries first."
+             description: "Reverse the order of the sort to get the oldest entries first."
       switch "-t",
-        description: "Sort by time modified (most recently modified first)."
+             description: "Sort by time modified (most recently modified first)."
       switch :verbose
       switch :debug
     end
@@ -46,8 +48,7 @@ module Homebrew
   def list
     list_args.parse
 
-    # Use of exec means we don't explicitly exit
-    list_unbrewed if args.unbrewed?
+    return list_unbrewed if args.unbrewed?
 
     # Unbrewed uses the PREFIX, which will exist
     # Things below use the CELLAR, which doesn't until the first formula is installed.
@@ -67,10 +68,10 @@ module Homebrew
         puts Formatter.columns(full_names)
       else
         ENV["CLICOLOR"] = nil
-        exec "ls", *ARGV.options_only << HOMEBREW_CELLAR
+        safe_system "ls", *ARGV.options_only << HOMEBREW_CELLAR
       end
     elsif args.verbose? || !$stdout.tty?
-      exec "find", *ARGV.kegs.map(&:to_s) + %w[-not -type d -print]
+      safe_system "find", *ARGV.kegs.map(&:to_s) + %w[-not -type d -print]
     else
       ARGV.kegs.each { |keg| PrettyListing.new keg }
     end
@@ -116,7 +117,7 @@ module Homebrew
     arguments.concat %w[)]
 
     cd HOMEBREW_PREFIX
-    exec "find", *arguments
+    safe_system "find", *arguments
   end
 
   def filtered_list

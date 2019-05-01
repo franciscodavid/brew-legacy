@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # @private
 class DevelopmentTools
   class << self
@@ -20,7 +22,7 @@ class DevelopmentTools
     end
 
     def installation_instructions
-      "Install Clang or brew install gcc"
+      "Install Clang or run `brew install gcc`."
     end
     alias custom_installation_instructions installation_instructions
 

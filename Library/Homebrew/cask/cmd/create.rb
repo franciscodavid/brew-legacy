@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Cask
   class Cmd
     class Create < AbstractCommand
@@ -26,7 +28,7 @@ module Cask
             version ''
             sha256 ''
 
-            url 'https://'
+            url "https://"
             name ''
             homepage ''
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "compilers"
 require "software_spec"
 
@@ -37,6 +39,12 @@ describe CompilerSelector do
     it "still returns gcc-7 if it fails with gcc without a specific version" do
       software_spec.fails_with(:clang)
       expect(subject.compiler).to eq("gcc-7")
+    end
+
+    it "returns gcc-6 if gcc formula offers gcc-6" do
+      software_spec.fails_with(:clang)
+      allow(Formulary).to receive(:factory).with("gcc").and_return(double(version: "6.0"))
+      expect(subject.compiler).to eq("gcc-6")
     end
 
     it "raises an error when gcc or llvm is missing" do

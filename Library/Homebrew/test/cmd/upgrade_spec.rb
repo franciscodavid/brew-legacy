@@ -1,3 +1,11 @@
+# frozen_string_literal: true
+
+require "cmd/shared_examples/args_parse"
+
+describe "Homebrew.upgrade_args" do
+  it_behaves_like "parseable arguments"
+end
+
 describe "brew upgrade", :integration_test do
   it "upgrades a Formula and cleans up old versions" do
     setup_test_formula "testball"

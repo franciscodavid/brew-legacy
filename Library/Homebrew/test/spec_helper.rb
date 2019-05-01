@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 if ENV["HOMEBREW_TESTS_COVERAGE"]
   require "simplecov"
 
@@ -140,6 +142,7 @@ RSpec.configure do |config|
 
     begin
       Tap.clear_cache
+      FormulaInstaller.clear_attempted
 
       TEST_DIRECTORIES.each(&:mkpath)
 
@@ -189,6 +192,7 @@ RSpec.configure do |config|
         CoreTap.instance.path/".git",
         CoreTap.instance.alias_dir,
         CoreTap.instance.path/"formula_renames.json",
+        *Pathname.glob("#{HOMEBREW_CELLAR}/*/"),
       ]
 
       files_after_test = find_files

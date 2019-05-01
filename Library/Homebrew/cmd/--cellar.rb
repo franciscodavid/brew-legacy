@@ -1,4 +1,6 @@
-require "cli_parser"
+# frozen_string_literal: true
+
+require "cli/parser"
 
 module Homebrew
   module_function

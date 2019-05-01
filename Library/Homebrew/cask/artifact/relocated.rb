@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "cask/artifact/abstract_artifact"
 
 require "extend/hash_validator"
@@ -50,9 +52,9 @@ module Cask
 
       private
 
-      ALT_NAME_ATTRIBUTE = "com.apple.metadata:kMDItemAlternateNames".freeze
+      ALT_NAME_ATTRIBUTE = "com.apple.metadata:kMDItemAlternateNames"
 
-      # Try to make the asset searchable under the target name.  Spotlight
+      # Try to make the asset searchable under the target name. Spotlight
       # respects this attribute for many filetypes, but ignores it for App
       # bundles. Alfred 2.2 respects it even for App bundles.
       def add_altname_metadata(file, altname, command: nil)
@@ -60,8 +62,8 @@ module Cask
 
         odebug "Adding #{ALT_NAME_ATTRIBUTE} metadata"
         altnames = command.run("/usr/bin/xattr",
-                                args:         ["-p", ALT_NAME_ATTRIBUTE, file],
-                                print_stderr: false).stdout.sub(/\A\((.*)\)\Z/, '\1')
+                               args:         ["-p", ALT_NAME_ATTRIBUTE, file],
+                               print_stderr: false).stdout.sub(/\A\((.*)\)\Z/, '\1')
         odebug "Existing metadata is: '#{altnames}'"
         altnames.concat(", ") unless altnames.empty?
         altnames.concat(%Q("#{altname}"))
@@ -71,8 +73,8 @@ module Cask
         command.run!("/bin/chmod", args: ["--", "u+rw", file, file.realpath])
 
         command.run!("/usr/bin/xattr",
-                      args:         ["-w", ALT_NAME_ATTRIBUTE, altnames, file],
-                      print_stderr: false)
+                     args:         ["-w", ALT_NAME_ATTRIBUTE, altnames, file],
+                     print_stderr: false)
       end
 
       def printable_target

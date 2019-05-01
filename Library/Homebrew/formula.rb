@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "cache_store"
 require "formula_support"
 require "lock_file"
@@ -32,7 +34,7 @@ require "mktemp"
 # @see Pathname
 # @see https://www.rubydoc.info/stdlib/fileutils FileUtils
 # @see https://docs.brew.sh/Formula-Cookbook Formula Cookbook
-# @see https://github.com/styleguide/ruby Ruby Style Guide
+# @see https://github.com/rubocop-hq/ruby-style-guide#the-ruby-style-guide Ruby Style Guide
 #
 # <pre>class Wget < Formula
 #   homepage "https://www.gnu.org/software/wget/"
@@ -1606,6 +1608,7 @@ class Formula
       "version_scheme"           => version_scheme,
       "bottle"                   => {},
       "keg_only"                 => keg_only?,
+      "bottle_disabled"          => bottle_disabled?,
       "options"                  => [],
       "build_dependencies"       => dependencies.select(&:build?)
                                                 .map(&:name)
@@ -2342,7 +2345,7 @@ class Formula
     # <pre># If a dependency is only needed in certain cases:
     # depends_on "sqlite" if MacOS.version == :mavericks
     # depends_on :xcode # If the formula really needs full Xcode.
-    # depends_on :macos => :mojave # Needs at least OS X Lion (10.14).
+    # depends_on :macos => :mojave # Needs at least macOS Mojave (10.14).
     # depends_on :x11 => :optional # X11/XQuartz components.
     # depends_on :osxfuse # Permits the use of the upstream signed binary or our source package.
     # depends_on :tuntap # Does the same thing as above. This is vital for Yosemite and above.</pre>
@@ -2495,15 +2498,10 @@ class Formula
     #   version '7.1'
     # end</pre>
     def fails_with(compiler, &block)
-      odisabled "fails_with :gcc_4_0" if compiler == :gcc_4_0
-      odisabled "fails_with :gcc_4_2" if compiler == :gcc_4_2
-      odisabled "fails_with :gcc" if compiler == :gcc && !block_given?
       specs.each { |spec| spec.fails_with(compiler, &block) }
     end
 
     def needs(*standards)
-      odisabled "needs :cxx11" if standards.include?(:cxx11)
-      odisabled "needs :cxx14" if standards.include?(:cxx14)
       specs.each { |spec| spec.needs(*standards) }
     end
 

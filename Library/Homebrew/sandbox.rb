@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require "erb"
 require "tempfile"
 
 class Sandbox
-  SANDBOX_EXEC = "/usr/bin/sandbox-exec".freeze
+  SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 
   def self.available?
     OS.mac? && File.executable?(SANDBOX_EXEC)
@@ -150,7 +152,7 @@ class Sandbox
   end
 
   class SandboxProfile
-    SEATBELT_ERB = <<~ERB.freeze
+    SEATBELT_ERB = <<~ERB
       (version 1)
       (debug deny) ; log all denied operations to /var/log/system.log
       <%= rules.join("\n") %>
@@ -178,13 +180,13 @@ class Sandbox
     end
 
     def add_rule(rule)
-      s = "("
+      s = +"("
       s << (rule[:allow] ? "allow" : "deny")
       s << " #{rule[:operation]}"
       s << " (#{rule[:filter]})" if rule[:filter]
       s << " (with #{rule[:modifier]})" if rule[:modifier]
       s << ")"
-      @rules << s
+      @rules << s.freeze
     end
 
     def dump

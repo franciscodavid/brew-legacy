@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Superenv
   class << self
     undef bin
@@ -87,12 +89,12 @@ module Superenv
   end
 
   def determine_cccfg
-    s = ""
+    s = +""
     # Fix issue with sed barfing on unicode characters on Mountain Lion
     s << "s"
     # Fix issue with >= Mountain Lion apr-1-config having broken paths
     s << "a"
-    s
+    s.freeze
   end
 
   def effective_sysroot

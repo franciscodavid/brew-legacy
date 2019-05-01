@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "requirement"
 
 class OsxfuseRequirement < Requirement
@@ -21,7 +23,7 @@ class OsxfuseRequirement < Requirement
     msg = "libfuse is required to install this formula.\n"
     if libfuse_formula_exists?
       msg + <<~EOS
-        Run "brew install libfuse" to install it.
+        Run `brew install libfuse` to install it.
       EOS
     else
       msg + super
