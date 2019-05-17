@@ -739,6 +739,16 @@ formula already uses.
 * `--revision`:
   Specify the new git commit *`revision`* corresponding to a specified *`tag`*.
 
+### `bump-revision` [*`options`*] [*`formula`*]
+
+Create a commit to increment the revision of the formula. If no revision is
+ present, "revision 1" will be added.
+
+* `-n`, `--dry-run`:
+  Print what would be done rather than doing it.
+* `--message`:
+  Append the provided *`message`* to the default commit message.
+
 ### `create` [*`options`*] *`URL`*
 
 Generate a formula for the downloadable file at *`URL`* and open it in the editor.
@@ -991,6 +1001,9 @@ can take several different forms:
 Note that environment variables must have a value set to be detected. For example,
 `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 `export HOMEBREW_NO_INSECURE_REDIRECT`.
+
+  * `HOMEBREW_ARCH`:
+    Linux only: If set, Homebrew will pass the set value to type name to the compiler's `-march` option instead of using the default (`-march=native`).
 
   * `HOMEBREW_ARTIFACT_DOMAIN`:
     If set, instructs Homebrew to prefix all download URLs, including those for bottles,
