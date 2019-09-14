@@ -25,7 +25,7 @@ function __fish_brew_opts -d "Only arguments starting with a dash (options)"
     string match --all -- '-*' (__fish_brew_args)
 end
 
-# This can be used either to get the first argument or to match it against a given list of commmands
+# This can be used either to get the first argument or to match it against a given list of commands
 #
 # Usage examples (for `completion -n '...'`):
 # * `__fish_brew_command` returns the command (first arg of brew) or exits with 1
@@ -59,7 +59,7 @@ function __fish_brew_subcommand -a cmd -d "Helps matching the second argument of
     end
 end
 
-# This can be used to match any given options agains the given list of arguments:
+# This can be used to match any given option against the given list of arguments:
 # * to add condition on interdependent options
 # * to ddd condition on mutually exclusive options
 #
@@ -253,6 +253,7 @@ __fish_brew_complete_arg 'cat' -a '(__fish_brew_suggest_formulae_all)'
 
 __fish_brew_complete_cmd 'cleanup' "Remove old installed versions"
 __fish_brew_complete_arg 'cleanup' -a '(__fish_brew_suggest_formulae_installed)'
+__fish_brew_complete_arg 'cleanup' -a '(__fish_brew_suggest_casks_installed)'
 __fish_brew_complete_arg 'cleanup'      -l prune   -d "Remove all cache files older than given number of days" -a '(seq 1 5)'
 __fish_brew_complete_arg 'cleanup' -s n -l dry-run -d "Show what files would be removed"
 __fish_brew_complete_arg 'cleanup' -s s            -d "Scrub the cache, removing downloads for even the latest versions of formulae"
@@ -390,7 +391,7 @@ __fish_brew_complete_arg 'install upgrade'      -l keep-tmp     -d "Keep temp fi
 __fish_brew_complete_arg 'install upgrade'      -l build-bottle -d "Prepare the formula for eventual bottling during installation"
 __fish_brew_complete_arg 'install upgrade' -s i -l interactive  -d "Download and patch formula, then open a shell"
 __fish_brew_complete_arg 'install upgrade; and __fish_brew_opt -i --interactive' -s g -l git -d "Create a Git repository for working on patches"
-# fomrula installtion options are listed after the formula name:
+# formula installation options are listed after the formula name:
 __fish_brew_complete_arg 'install;
     and [ (count (__fish_brew_args)) -ge 2 ];
     and not string match --quiet -- "-*" (__fish_brew_args)[-1]
@@ -477,10 +478,6 @@ __fish_brew_complete_arg 'pin' -a '(__fish_brew_suggest_formulae_unpinned)'
 
 __fish_brew_complete_cmd 'postinstall' "Rerun the post-install steps for formula"
 __fish_brew_complete_arg 'postinstall' -a '(__fish_brew_suggest_formulae_installed)'
-
-
-__fish_brew_complete_cmd 'prune' "Remove dead symlinks"
-__fish_brew_complete_arg 'prune' -s n -l dry-run -d "Show what files would be removed"
 
 
 __fish_brew_complete_cmd 'reinstall' "Uninstall and then install again"
@@ -854,6 +851,7 @@ __fish_brew_complete_sub_cmd 'cask' 'install'   "Install the given Cask"
 __fish_brew_complete_sub_arg 'cask' 'install' -l force          -d "Reinstall even if the Cask is already present"
 __fish_brew_complete_sub_arg 'cask' 'install' -l skip-cask-deps -d "Skip any Cask dependencies"
 __fish_brew_complete_sub_arg 'cask' 'install' -l require-sha    -d "Abort if the Cask doesn't define a checksum"
+__fish_brew_complete_sub_arg 'cask' 'audit install' -rl language -d "Set language of the Cask to install. The first matching language is used, otherwise the default language on the Cask. The default value is the language of your system."
 
 __fish_brew_complete_sub_cmd 'cask' 'list'      "List installed Casks or staged files of the given installed Casks"
 __fish_brew_complete_sub_arg 'cask' 'list ls' -s 1        -d "Format output in a single column"
@@ -871,6 +869,7 @@ __fish_brew_complete_sub_arg 'cask' 'style' -l fix -d "Auto-correct any style er
 
 __fish_brew_complete_sub_cmd 'cask' 'upgrade'     "Upgrades all outdated casks"
 __fish_brew_complete_sub_arg 'cask' 'upgrade' -l force
+__fish_brew_complete_sub_arg 'cask' 'upgrade' -l dry-run
 
 __fish_brew_complete_sub_cmd 'cask' 'uninstall' "Uninstall the given Cask"
 __fish_brew_complete_sub_arg 'cask' 'uninstall remove rm' -l force -d "Uninstall even if the Cask is not present"
