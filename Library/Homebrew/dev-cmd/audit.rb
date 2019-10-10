@@ -95,7 +95,7 @@ module Homebrew
       odie "--only-cops/--except-cops and --strict/--only cannot be used simultaneously!"
     end
 
-    options = { fix: args.fix?, realpath: true }
+    options = { fix: args.fix? }
 
     if only_cops
       options[:only_cops] = only_cops
@@ -254,7 +254,7 @@ module Homebrew
       wanted_mode = 0100644 & ~File.umask
       actual_mode = formula.path.stat.mode
       unless actual_mode == wanted_mode
-        problem format("Incorrect file permissions (%03<actual>o): chmod %03<wanted>o %{path}",
+        problem format("Incorrect file permissions (%03<actual>o): chmod %03<wanted>o %<path>s",
                        actual: actual_mode & 0777,
                        wanted: wanted_mode & 0777,
                        path:   formula.path)
@@ -394,8 +394,8 @@ module Homebrew
              dep_f.keg_only_reason.valid? &&
              !%w[apr apr-util openblas openssl openssl@1.1].include?(dep.name)
             new_formula_problem(
-              "Dependency '#{dep.name}' may be unnecessary as it is provided " \
-              "by macOS; try to build this formula without it.",
+              "Dependency '#{dep.name}' is provided by macOS; " \
+              "please replace 'depends_on' with 'uses_from_macos'.",
             )
           end
 
@@ -759,6 +759,7 @@ module Homebrew
         pygtkglext 1.1.0
         gtk-mac-integration 2.1.3
         gtk-doc 1.31
+        gcab 1.3
       ].each_slice(2).to_a.map do |formula, version|
         [formula, version.split(".")[0..1].join(".")]
       end

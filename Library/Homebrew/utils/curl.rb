@@ -19,6 +19,8 @@ def curl_args(*extra_args, show_output: false, user_agent: :default)
   # do not load .curlrc unless requested (must be the first argument)
   args << "-q" unless ENV["HOMEBREW_CURLRC"]
 
+  args << "--globoff"
+
   args << "--show-error"
 
   args << "--user-agent" << case user_agent
@@ -58,7 +60,7 @@ def curl_download(*args, to: nil, **options)
 
   range_stdout = curl_output("--location", "--range", "0-1",
                              "--dump-header", "-",
-                             "--write-out", "%{http_code}",
+                             "--write-out", "%\{http_code}",
                              "--output", "/dev/null", *args, **options).stdout
   headers, _, http_status = range_stdout.partition("\r\n\r\n")
 
