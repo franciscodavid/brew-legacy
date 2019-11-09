@@ -6,6 +6,8 @@ require "lock_file"
 require "ostruct"
 
 class Keg
+  extend Cachable
+
   class AlreadyLinkedError < RuntimeError
     def initialize(keg)
       super <<~EOS
@@ -75,7 +77,7 @@ class Keg
       opt
       var/homebrew/linked
     ]
-  ).map { |dir| HOMEBREW_PREFIX/dir }.uniq.sort.freeze
+  ).map { |dir| HOMEBREW_PREFIX/dir }.sort.uniq.freeze
 
   # Keep relatively in sync with
   # https://github.com/Homebrew/install/blob/master/install
@@ -98,7 +100,7 @@ class Keg
       HOMEBREW_REPOSITORY,
       Language::Python.homebrew_site_packages,
     ]
-  ).uniq.sort.freeze
+  ).sort.uniq.freeze
 
   # These paths relative to the keg's share directory should always be real
   # directories in the prefix, never symlinks.
@@ -519,7 +521,8 @@ class Keg
   end
 
   def runtime_dependencies
-    tab.runtime_dependencies
+    Keg.cache[:runtime_dependencies] ||= {}
+    Keg.cache[:runtime_dependencies][path] ||= tab.runtime_dependencies
   end
 
   def aliases

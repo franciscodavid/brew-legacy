@@ -74,7 +74,7 @@ brew merge-homebrew --core
 ```
 
 Merging all the changes from upstream in one go is usually
-undesireable since our build servers will time out. Instead, attempt
+undesirable since our build servers will time out. Instead, attempt
 to only merge 8-10 modified formulae.
 
 `git log --oneline master..homebrew/master` will show a list of all
@@ -203,7 +203,7 @@ This is due to a bug with Azure Pipelines and its handling of merge
 commits. Master branch builds also fail for the same reason. This is
 OK.
 
-Once the PR is approved by other Homebrew developers, you can finalize
+Once the PR is approved by other Homebrew developers, you can finalise
 the merge with:
 
 ```bash
@@ -219,7 +219,7 @@ running `git push your-fork master`
 After merging changes, we must rebuild bottles for all the PRs that
 had conflicts.
 
-To do this, tap `Linuxbrew/homebrew-developer` and run the following
+To do this, tap `Homebrew/homebrew-linux-dev` and run the following
 command where the merge commit is `HEAD`:
 
 ```sh
@@ -235,7 +235,6 @@ against the formulae:
 And it skips formulae if any of the following are true:
 - it doesn't need a bottle
 - it already has a bottle
-- the formula depends on macOS to build
 - the formula's tap is Homebrew/homebrew-core (the upstream macOS repo)
 - there is already an open PR for the formula's bottle
 - the current branch is not master
@@ -246,7 +245,7 @@ run `brew find-formulae-to-bottle --verbose` separate to the `for`
 loop above.
 
 The `build-bottle-pr` script creates a branch called `bottle-<FORMULA>`, adds `# Build a bottle
-for Linuxbrew` to the top of the formula, pushes the branch to GitHub
+for Linux` to the top of the formula, pushes the branch to GitHub
 at the specified remote (default: `origin`), and opens a pull request using `hub
 pull-request`.
 
