@@ -75,13 +75,13 @@ module Homebrew
       (ARGV.resolved_formulae - outdated).each do |f|
         versions = f.installed_kegs.map(&:version)
         if versions.empty?
-          onoe "#{f.full_specified_name} not installed"
+          ofail "#{f.full_specified_name} not installed"
         else
           version = versions.max
-          onoe "#{f.full_specified_name} #{version} already installed"
+          opoo "#{f.full_specified_name} #{version} already installed"
         end
       end
-      exit 1 if outdated.empty?
+      return if outdated.empty?
     end
 
     pinned = outdated.select(&:pinned?)
@@ -267,12 +267,13 @@ module Homebrew
     oh1 "Checking for dependents' broken linkage from upgraded formulae..."
     broken_dependents = CacheStoreDatabase.use(:linkage) do |db|
       formulae_to_install.flat_map(&:runtime_installed_formula_dependents)
-                         .map(&:opt_or_installed_prefix_keg)
-                         .compact
-                         .select do |keg|
+                         .select do |f|
+        keg = f.opt_or_installed_prefix_keg
+        next unless keg
+
         LinkageChecker.new(keg, cache_db: db)
                       .broken_library_linkage?
-      end
+      end.compact
     end
     if broken_dependents.blank?
       ohai "No broken dependents found!"
