@@ -32,9 +32,7 @@ Good luck!
 ## Donations
 Homebrew is a non-profit project run entirely by unpaid volunteers. We need your funds to pay for software, hardware and hosting around continuous integration and future improvements to the project. Every donation will be spent on making Homebrew better for our users.
 
-Please consider a regular donation through [GitHub Sponsors](https://github.com/sponsors/Homebrew) or [Patreon](https://www.patreon.com/homebrew):
-
-[![Donate with Patreon](https://img.shields.io/badge/patreon-donate-green.svg)](https://www.patreon.com/homebrew)
+Please consider a regular donation through [GitHub Sponsors](https://github.com/sponsors/Homebrew) or [Patreon](https://www.patreon.com/homebrew).
 
 Alternatively, if you'd rather make a one-off payment:
 
@@ -52,7 +50,7 @@ Homebrew is a member of the [Software Freedom Conservancy](https://sfconservancy
 Please report security issues to our [HackerOne](https://hackerone.com/homebrew/).
 
 ## Who Are You?
-Homebrew's [Project Leader](https://github.com/Homebrew/homebrew-governance-private/blob/master/GOVERNANCE.md#6-project-leader) is [Mike McQuaid](https://github.com/MikeMcQuaid).
+Homebrew's [Project Leader](https://docs.brew.sh/Homebrew-Governance#6-project-leader) is [Mike McQuaid](https://github.com/MikeMcQuaid).
 
 Homebrew's [Project Leadership Committee](https://docs.brew.sh/Homebrew-Governance#4-project-leadership-committee) is [Misty De Meo](https://github.com/mistydemeo), [Shaun Jackman](https://github.com/sjackman), [Jonathan Chang](https://github.com/jonchang), [Mike McQuaid](https://github.com/MikeMcQuaid) and [Markus Reiter](https://github.com/reitermarkus).
 
