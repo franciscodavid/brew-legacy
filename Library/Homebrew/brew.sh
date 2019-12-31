@@ -374,6 +374,26 @@ then
   export HOMEBREW_BOTTLE_DOMAIN="$HOMEBREW_BOTTLE_DEFAULT_DOMAIN"
 fi
 
+HOMEBREW_DEFAULT_BREW_GIT_REMOTE="https://github.com/franciscodavid/brew.legacy"
+if [[ -z "$HOMEBREW_BREW_GIT_REMOTE" ]]
+then
+  HOMEBREW_BREW_GIT_REMOTE="$HOMEBREW_DEFAULT_BREW_GIT_REMOTE"
+fi
+export HOMEBREW_BREW_GIT_REMOTE
+
+if [[ -n "$HOMEBREW_MACOS" ]] || [[ -n "$HOMEBREW_FORCE_HOMEBREW_ON_LINUX" ]]
+then
+  HOMEBREW_DEFAULT_CORE_GIT_REMOTE="https://github.com/Homebrew/homebrew-core"
+else
+  HOMEBREW_DEFAULT_CORE_GIT_REMOTE="https://github.com/Homebrew/linuxbrew-core"
+fi
+
+if [[ -z "$HOMEBREW_CORE_GIT_REMOTE" ]]
+then
+  HOMEBREW_CORE_GIT_REMOTE="$HOMEBREW_DEFAULT_CORE_GIT_REMOTE"
+fi
+export HOMEBREW_CORE_GIT_REMOTE
+
 if [[ -f "$HOMEBREW_LIBRARY/Homebrew/cmd/$HOMEBREW_COMMAND.sh" ]]
 then
   HOMEBREW_BASH_COMMAND="$HOMEBREW_LIBRARY/Homebrew/cmd/$HOMEBREW_COMMAND.sh"
@@ -390,8 +410,8 @@ fi
 check-run-command-as-root() {
   [[ "$(id -u)" = 0 ]] || return
 
-  # Allow Azure Pipelines/Docker/Kubernetes to do everything as root (as it's normal there)
-  [[ -f /proc/1/cgroup ]] && grep -E "azpl_job|docker|kubepods" -q /proc/1/cgroup && return
+  # Allow Azure Pipelines/Docker/Concourse/Kubernetes to do everything as root (as it's normal there)
+  [[ -f /proc/1/cgroup ]] && grep -E "azpl_job|docker|garden|kubepods" -q /proc/1/cgroup && return
 
   # Homebrew Services may need `sudo` for system-wide daemons.
   [[ "$HOMEBREW_COMMAND" = "services" ]] && return
