@@ -403,6 +403,8 @@ the reinstalled formulae or, every 30 days, for all formulae.
   If brewing fails, open an interactive debugging session with access to IRB or a shell inside the temporary build directory.
 * `-s`, `--build-from-source`:
   Compile *`formula`* from source even if a bottle is available.
+* `-i`, `--interactive`:
+  Download and patch *`formula`*, then open a shell. This allows the user to run `./configure --help` and otherwise determine how to turn the software package into a Homebrew package.
 * `--force-bottle`:
   Install from a bottle if it exists for the current or newest version of macOS, even if it would not normally be used for installation.
 * `--keep-tmp`:
@@ -504,8 +506,6 @@ HTTPS, e.g. SSH, GIT, HTTP, FTP(S), RSYNC.
   Migrate tapped formulae from symlink-based to directory-based structure.
 * `--list-pinned`:
   List all pinned taps.
-* `-q`, `--quieter`:
-  Suppress any warnings.
 
 ### `tap-info` [*`options`*] [*`tap`*]
 
@@ -584,6 +584,8 @@ the upgraded formulae or, every 30 days, for all formulae.
   If brewing fails, open an interactive debugging session with access to IRB or a shell inside the temporary build directory.
 * `-s`, `--build-from-source`:
   Compile *`formula`* from source even if a bottle is available.
+* `-i`, `--interactive`:
+  Download and patch *`formula`*, then open a shell. This allows the user to run `./configure --help` and otherwise determine how to turn the software package into a Homebrew package.
 * `--force-bottle`:
   Install from a bottle if it exists for the current or newest version of macOS, even if it would not normally be used for installation.
 * `--fetch-HEAD`:
@@ -1285,15 +1287,15 @@ Homebrew API: <https://rubydoc.brew.sh>
 
 Homebrew's Project Leader is Mike McQuaid.
 
-Homebrew's Project Leadership Committee is Misty De Meo, Shaun Jackman, Jonathan Chang, Mike McQuaid and Markus Reiter.
+Homebrew's Project Leadership Committee is Misty De Meo, Shaun Jackman, Jonathan Chang, Sean Molenaar and Markus Reiter.
 
 Homebrew's Technical Steering Committee is Michka Popoff, FX Coudert, Markus Reiter, Misty De Meo and Mike McQuaid.
 
 Homebrew/brew's Linux maintainers are Michka Popoff, Shaun Jackman, Dawid Dziurla and Issy Long.
 
-Homebrew's other current maintainers are Claudia Pellegrino, Rui Chen, Vitor Galvao, Caleb Xu, Gautham Goli, Steven Peters, William Woodruff, Igor Kapkov, Izaak Beekman, Sean Molenaar, Jan Viljanen, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters, Tom Schoonjans and Issy Long.
+Homebrew's other current maintainers are Claudia Pellegrino, Rui Chen, Vitor Galvao, Caleb Xu, Gautham Goli, Steven Peters, William Woodruff, Igor Kapkov, Izaak Beekman, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters, Tom Schoonjans and Issy Long.
 
-Former maintainers with significant contributions include JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew's creator: Max Howell.
+Former maintainers with significant contributions include Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew's creator: Max Howell.
 
 ## BUGS
 

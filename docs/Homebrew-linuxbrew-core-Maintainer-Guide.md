@@ -217,14 +217,14 @@ running `git push your-fork master`
 ## Building bottles for updated formulae
 
 After merging changes, we must rebuild bottles for all the PRs that
-had conflicts.
-
-To do this, tap `Homebrew/homebrew-linux-dev` and run the following
+had conflicts. There is an automatic workflow job that handles this
+when the merge commit is pushed to the repository; however, to do it
+manually, tap `Homebrew/homebrew-linux-dev` and run the following
 command where the merge commit is `HEAD`:
 
 ```sh
 for formula in $(brew find-formulae-to-bottle); do
-  brew build-bottle-pr --remote=$HOMEBREW_GITHUB_USER $formula
+  brew request-bottle $formula
 done
 ```
 
@@ -244,69 +244,30 @@ error; by default, this script won't output the errors. To see them,
 run `brew find-formulae-to-bottle --verbose` separate to the `for`
 loop above.
 
-The `build-bottle-pr` script creates a branch called `bottle-<FORMULA>`, adds `# Build a bottle
-for Linux` to the top of the formula, pushes the branch to GitHub
-at the specified remote (default: `origin`), and opens a pull request using `hub
-pull-request`.
+The `request-bottle` script kicks off a GitHub Action to build the
+bottle. If successful, it pushes the bottle to BinTray and a commit
+with the SHA to `master`. There are no pull requests, and no manual
+steps unless the formula fails to build. Check that the build was
+successful from the [Actions tab](https://github.com/homebrew/linuxbrew-core/actions).
 
-## Pulling bottles
-
-Pull requests are either raised by maintainers or users. In both
-cases, how to merge them depends on whether or not a Linux bottle has
-been built for the formula.
-
-We very rarely use the GitHub UI buttons. Instead, we "pull the
-bottle". This means that the PR shows up as "closed" to the user, but
-they still get authorship credit. This is done with the following
-command:
-
-```bash
-HOMEBREW_BOTTLE_DOMAIN=https://linuxbrew.bintray.com brew pull --bottle --bintray-org=linuxbrew --test-bot-user=LinuxbrewTestBot <PR-NUMBER>
-```
-
-It saves a lot of time to alias this in your shell config. One
-possible alias is `lbrew-pull-bottle`.
-
-For PRs with the title "Build a bottle for Linux" and that have
-only one commit with contents "# Build a bottle for Linux", these
-have been created with `brew build-bottle-pr` and the commit from the
-PR doesn't need preserving. We don't want to litter the codebase with
-comments. In these cases, you can combine `brew pull --bottle` with
-`brew squash-bottle-pr` (in the Homebrew/linux-dev tap). This will
-squash the first commit message, leaving just the commit with the
-bottle SHA authored by `LinuxbrewTestBot`. It will still close the PR,
-as `brew pull --bottle` adds `Closes` and `Signed-off-by` to the
-commit message body.
-
-```bash
-lbrew-pull-bottle <PR-NUMBER> && brew squash-bottle-pr
-```
-
-For PRs where there have been force pushes or extra commits to fix the
-build or fix bottling syntax, we can't `brew squash-bottle-pr` as we
-must keep the fixes. If the `# Build a bottle for Linux` line
-still exists in the formula, remove it.
-
-The `brew pull` command *publishes* the bottle to BinTray and verifies
-that the SHA in the formula and the SHA of the downloaded file match.
-To verify a bottle, the script downloads the bottle from BinTray - if
-you're on an unstable connection, this may take a while or even time
-out. Publishing the bottle means that it's available as the latest
-version for users to download, so remember to push your commits to
-`origin`.
-
-If something goes wrong with the bottle pull and you don't want to
-publish the bottle and push the commit, `git reset --hard
-origin/master` and login to BinTray and delete the new bottle (there's
-a list of who published what recently).
-
-Once you've pushed to `origin`, there's no going back: you're a
-maintainer now, you can't force-push to fix your mistakes!
+If the formula fails to build, we open a pull request with the fix,
+which will build (but not publish) bottles for that formula. Once the
+formula builds correctly, we merge that pull request from the GitHub
+web interface, which starts a workflow job to publish the bottle and
+push a bottle commit to Homebrew/linuxbrew-core.
 
 ## Creating new Linux-specific formula
 
-Make a PR to `Homebrew/linuxbrew-core` containing one commit named like this: `name (new formula)`. Keep only one commit in this PR, squash and force push to your branch if needed. Include a comment: `# tag "linux"` in the formula after the `url` stanza, so maintainers can easily find Linux only formulae.
-For `brew pull` to be successful when new formulae are added, we have to insert an empty bottle block into the formula code. This usually goes after the `linux` tag.
+Make a PR to `Homebrew/linuxbrew-core` containing one commit named
+like this: `name (new formula)`. Keep only one commit in this PR,
+squash and force push to your branch if needed. Include a comment: `#
+tag "linux"` in the formula after the `url` stanza, so maintainers can
+easily find Linux only formulae.
+
+For the bottle commit to be successful when new formulae are added, we
+have to insert an empty bottle block into the formula code. This
+usually goes after the `linux` tag.
+
 ```ruby
 bottle do
 end
