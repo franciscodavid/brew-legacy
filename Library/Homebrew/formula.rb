@@ -392,7 +392,7 @@ class Formula
       Formula[path.basename(".rb").to_s]
     rescue FormulaUnavailableError
       nil
-    end.compact.sort
+    end.compact.sort_by(&:version).reverse
   end
 
   # A named Resource for the currently active {SoftwareSpec}.
@@ -1669,7 +1669,7 @@ class Formula
         "root_url" => bottle_spec.root_url,
       }
       bottle_info["files"] = {}
-      bottle_spec.collector.keys.each do |os|
+      bottle_spec.collector.each_key do |os|
         bottle_url = "#{bottle_spec.root_url}/#{Bottle::Filename.create(self, os, bottle_spec.rebuild).bintray}"
         checksum = bottle_spec.collector[os]
         bottle_info["files"][os] = {
@@ -1690,10 +1690,13 @@ class Formula
     end
 
     hsh["requirements"] = requirements.map do |req|
+      req.name.prepend("maximum_") if req.try(:comparator) == "<="
       {
         "name"     => req.name,
         "cask"     => req.cask,
         "download" => req.download,
+        "version"  => req.try(:version),
+        "contexts" => req.tags,
       }
     end
 
@@ -1744,6 +1747,7 @@ class Formula
     }
 
     ENV.clear_sensitive_environment!
+    Utils.set_git_name_email!
 
     mktemp("#{name}-test") do |staging|
       staging.retain! if ARGV.keep_tmp?
@@ -1861,9 +1865,15 @@ class Formula
     # remove "boring" arguments so that the important ones are more likely to
     # be shown considering that we trim long ohai lines to the terminal width
     pretty_args = args.dup
-    if cmd == "./configure" && !verbose
-      pretty_args.delete "--disable-dependency-tracking"
-      pretty_args.delete "--disable-debug"
+    unless verbose
+      case cmd
+      when "./configure"
+        pretty_args -= %w[--disable-dependency-tracking --disable-debug --disable-silent-rules]
+      when "cmake"
+        pretty_args -= std_cmake_args
+      when "go"
+        pretty_args -= std_go_args
+      end
     end
     pretty_args.each_index do |i|
       pretty_args[i] = "import setuptools..." if pretty_args[i].to_s.start_with? "import setuptools"
@@ -2380,8 +2390,6 @@ class Formula
     # depends_on "postgresql" if build.without? "sqlite"</pre>
     # <pre># Python 3.x if the `--with-python` is given to `brew install example`
     # depends_on "python3" => :optional</pre>
-    # <pre># Python 2.7:
-    # depends_on "python@2"</pre>
     def depends_on(dep)
       specs.each { |spec| spec.depends_on(dep) }
     end

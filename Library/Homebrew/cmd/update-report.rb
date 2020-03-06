@@ -13,7 +13,7 @@ module Homebrew
 
   def update_preinstall_header
     @update_preinstall_header ||= begin
-      ohai "Auto-updated Homebrew!" if ARGV.include?("--preinstall")
+      ohai "Auto-updated Homebrew!" if args.preinstall?
       true
     end
   end
@@ -51,6 +51,7 @@ module Homebrew
       puts <<~EOS
         #{Tty.bold}Read the analytics documentation (and how to opt-out) here:
           #{Formatter.url("https://docs.brew.sh/Analytics")}#{Tty.reset}
+        No analytics have been recorded yet (or will be during this `brew` run).
 
       EOS
 
@@ -108,7 +109,7 @@ module Homebrew
     end
 
     if !updated
-      puts "Already up-to-date." if !ARGV.include?("--preinstall") && !ENV["HOMEBREW_UPDATE_FAILED"]
+      puts "Already up-to-date." if !args.preinstall? && !ENV["HOMEBREW_UPDATE_FAILED"]
     else
       if hub.empty?
         puts "No changes to formulae."
@@ -121,7 +122,7 @@ module Homebrew
                                .update_from_report!(hub)
         end
       end
-      puts if ARGV.include?("--preinstall")
+      puts if args.preinstall?
     end
 
     link_completions_manpages_and_docs
@@ -198,6 +199,9 @@ class Reporter
         if status == "D"
           # Have a dedicated report array for deleted casks.
           @report[:DC] << tap.formula_file_to_name(src)
+        elsif status == "M"
+          # Report updated casks
+          @report[:MC] << tap.formula_file_to_name(src)
         end
       end
 
@@ -421,6 +425,8 @@ class ReporterHub
     dump_formula_report :M, "Updated Formulae"
     dump_formula_report :R, "Renamed Formulae"
     dump_formula_report :D, "Deleted Formulae"
+    dump_formula_report :MC, "Updated Casks"
+    dump_formula_report :DC, "Deleted Casks"
   end
 
   private
@@ -435,6 +441,9 @@ class ReporterHub
         "#{name} -> #{new_name}"
       when :A
         name unless installed?(name)
+      when :MC, :DC
+        name = name.split("/").last
+        cask_installed?(name) ? pretty_installed(name) : name
       else
         installed?(name) ? pretty_installed(name) : name
       end
@@ -449,5 +458,9 @@ class ReporterHub
 
   def installed?(formula)
     (HOMEBREW_CELLAR/formula.split("/").last).directory?
+  end
+
+  def cask_installed?(cask)
+    (Cask::Caskroom.path/cask).directory?
   end
 end

@@ -22,12 +22,11 @@ module Homebrew
         any transport protocol that `git`(1) handles. The one-argument form of `tap`
         simplifies but also limits. This two-argument command makes no
         assumptions, so taps can be cloned from places other than GitHub and
-        using protocols other than HTTPS, e.g. SSH, GIT, HTTP, FTP(S), RSYNC.
+        using protocols other than HTTPS, e.g. SSH, git, HTTP, FTP(S), rsync.
       EOS
       switch "--full",
-             description: "Use a full clone when tapping a repository. By default, the repository is "\
-                          "cloned as a shallow copy (`--depth=1`). To convert a shallow copy to a "\
-                          "full copy, you can retap by passing `--full` without first untapping."
+             description: "Convert a shallow clone to a full clone without untapping. By default, taps are no "\
+                          "longer cloned as shallow clones."
       switch "--force-auto-update",
              description: "Auto-update tap even if it is not hosted on GitHub. By default, only taps "\
                           "hosted on GitHub are auto-updated (for performance reasons)."
@@ -49,14 +48,14 @@ module Homebrew
       Tap.each(&:link_completions_and_manpages)
     elsif args.list_pinned?
       puts Tap.select(&:pinned?).map(&:name)
-    elsif ARGV.named.empty?
+    elsif args.no_named?
       puts Tap.names
     else
-      tap = Tap.fetch(ARGV.named.first)
+      tap = Tap.fetch(args.named.first)
       begin
-        tap.install clone_target:      ARGV.named.second,
+        tap.install clone_target:      args.named.second,
                     force_auto_update: force_auto_update?,
-                    quiet:             Homebrew.args.quiet?
+                    quiet:             args.quiet?
       rescue TapRemoteMismatchError => e
         odie e
       rescue TapAlreadyTappedError

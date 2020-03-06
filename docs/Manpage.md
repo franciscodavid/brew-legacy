@@ -425,8 +425,10 @@ search for *`text`* is extended online to `homebrew/core` and `homebrew/cask`.
 If no *`text`* is provided, list all locally available formulae (including tapped
 ones). No online search is performed.
 
+* `--formulae`:
+  Without *`text`*, list all locally available formulae (no online search is performed). With *`text`*, search online and locally for formulae.
 * `--casks`:
-  List all locally available casks (including tapped ones). No online search is performed.
+  Without *`text`*, list all locally available casks (including tapped ones, no online search is performed). With *`text`*, search online and locally for casks.
 * `--desc`:
   Search for formulae with a description matching *`text`* and casks with a name matching *`text`*.
 * `--macports`:
@@ -496,10 +498,10 @@ With *`URL`* specified, tap a formula repository from anywhere, using any
 transport protocol that `git`(1) handles. The one-argument form of `tap`
 simplifies but also limits. This two-argument command makes no assumptions, so
 taps can be cloned from places other than GitHub and using protocols other than
-HTTPS, e.g. SSH, GIT, HTTP, FTP(S), RSYNC.
+HTTPS, e.g. SSH, git, HTTP, FTP(S), rsync.
 
 * `--full`:
-  Use a full clone when tapping a repository. By default, the repository is cloned as a shallow copy (`--depth=1`). To convert a shallow copy to a full copy, you can retap by passing `--full` without first untapping.
+  Convert a shallow clone to a full clone without untapping. By default, taps are no longer cloned as shallow clones.
 * `--force-auto-update`:
   Auto-update tap even if it is not hosted on GitHub. By default, only taps hosted on GitHub are auto-updated (for performance reasons).
 * `--repair`:
@@ -767,7 +769,7 @@ uses.
 * `--no-fork`:
   Don't try to fork the repository.
 * `--mirror`:
-  Use the specified *`URL`* as a mirror URL.
+  Use the specified *`URL`* as a mirror URL. If *`URL`* is a comma-separated list of URLs, multiple mirrors will be added.
 * `--version`:
   Use the specified *`version`* to override the value parsed from the URL or tag. Note that `--version=0` can be used to delete an existing version override from a formula if it has become redundant.
 * `--message`:
@@ -1293,7 +1295,7 @@ Homebrew's Technical Steering Committee is Michka Popoff, FX Coudert, Markus Rei
 
 Homebrew/brew's Linux maintainers are Michka Popoff, Shaun Jackman, Dawid Dziurla and Issy Long.
 
-Homebrew's other current maintainers are Claudia Pellegrino, Rui Chen, Vitor Galvao, Caleb Xu, Gautham Goli, Steven Peters, William Woodruff, Igor Kapkov, Izaak Beekman, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters, Tom Schoonjans and Issy Long.
+Homebrew's other current maintainers are Claudia Pellegrino, Zach Auten, Rui Chen, Vitor Galvao, Caleb Xu, Gautham Goli, Steven Peters, Bo Anderson, William Woodruff, Igor Kapkov, Sam Ford, Alexander Bayandin, Izaak Beekman, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters, Tom Schoonjans and Issy Long.
 
 Former maintainers with significant contributions include Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew's creator: Max Howell.
 
