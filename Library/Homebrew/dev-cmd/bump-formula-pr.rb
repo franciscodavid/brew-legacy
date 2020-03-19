@@ -194,7 +194,13 @@ module Homebrew
       resource = Resource.new { @url = new_url }
       resource.download_strategy = DownloadStrategyDetector.detect_from_url(new_url)
       resource.owner = Resource.new(formula.name)
-      resource.version = forced_version if forced_version
+      if forced_version
+        if forced_version == resource.version
+          forced_version = nil
+        else
+          resource.version = forced_version
+        end
+      end
       odie "No --version= argument specified!" unless resource.version
       resource_path = resource.fetch
       tar_file_extensions = %w[.tar .tb2 .tbz .tbz2 .tgz .tlz .txz .tZ]
@@ -275,18 +281,18 @@ module Homebrew
 
     if forced_version && forced_version != "0"
       if requested_spec == :stable
-        if File.read(formula.path).include?("version \"#{old_formula_version}\"")
-          replacement_pairs << [
+        replacement_pairs << if File.read(formula.path).include?("version \"#{old_formula_version}\"")
+          [
             old_formula_version.to_s,
             forced_version,
           ]
         elsif new_mirrors
-          replacement_pairs << [
+          [
             /^( +)(mirror \"#{Regexp.escape(new_mirrors.last)}\"\n)/m,
             "\\1\\2\\1version \"#{forced_version}\"\n",
           ]
         else
-          replacement_pairs << [
+          [
             /^( +)(url \"#{Regexp.escape(new_url)}\"\n)/m,
             "\\1\\2\\1version \"#{forced_version}\"\n",
           ]

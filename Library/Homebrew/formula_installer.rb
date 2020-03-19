@@ -228,7 +228,7 @@ class FormulaInstaller
       EOS
       if formula.outdated? && !formula.head?
         message += <<~EOS
-          To upgrade to #{formula.pkg_version}, run `brew upgrade #{formula.name}`.
+          To upgrade to #{formula.pkg_version}, run `brew upgrade #{formula.full_name}`.
         EOS
       elsif only_deps?
         message = nil
@@ -368,7 +368,7 @@ class FormulaInstaller
 
       raise if ARGV.homebrew_developer?
 
-      $stderr.puts "Please report this to the #{formula.tap} tap!"
+      $stderr.puts "Please report this issue to the #{formula.tap} tap (not Homebrew/brew or Homebrew/core)!"
       false
     else # rubocop:disable Layout/ElseAlignment
       f.linked_keg.exist? && f.opt_prefix.exist?
@@ -703,7 +703,7 @@ class FormulaInstaller
     args << "--debug" if debug?
     args << "--cc=#{ARGV.cc}" if ARGV.cc
     args << "--default-fortran-flags" if ARGV.include? "--default-fortran-flags"
-    args << "--keep-tmp" if ARGV.keep_tmp?
+    args << "--keep-tmp" if Homebrew.args.keep_tmp?
 
     if ARGV.env
       args << "--env=#{ARGV.env}"
@@ -752,7 +752,7 @@ class FormulaInstaller
         sandbox = Sandbox.new
         formula.logs.mkpath
         sandbox.record_log(formula.logs/"build.sandbox.log")
-        sandbox.allow_write_path(ENV["HOME"]) if ARGV.interactive?
+        sandbox.allow_write_path(ENV["HOME"]) if Homebrew.args.interactive?
         sandbox.allow_write_temp_and_cache
         sandbox.allow_write_log(formula)
         sandbox.allow_cvs

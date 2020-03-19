@@ -31,18 +31,6 @@ module HomebrewArgvExtension
     flag?("--debug") || !ENV["HOMEBREW_DEBUG"].nil?
   end
 
-  def interactive?
-    flag? "--interactive"
-  end
-
-  def keep_tmp?
-    include? "--keep-tmp"
-  end
-
-  def git?
-    flag? "--git"
-  end
-
   def homebrew_developer?
     !ENV["HOMEBREW_DEVELOPER"].nil?
   end
@@ -53,10 +41,6 @@ module HomebrewArgvExtension
 
   def no_sandbox?
     include?("--no-sandbox") || !ENV["HOMEBREW_NO_SANDBOX"].nil?
-  end
-
-  def ignore_deps?
-    include? "--ignore-dependencies"
   end
 
   def build_stable?
