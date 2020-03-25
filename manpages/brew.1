@@ -1044,6 +1044,10 @@ Create a basic template for a Perl build\.
 Create a basic template for a Python build\.
 .
 .TP
+\fB\-\-ruby\fR
+Create a basic template for a Ruby build\.
+.
+.TP
 \fB\-\-rust\fR
 Create a basic template for a Rust build\.
 .
@@ -1119,6 +1123,9 @@ Return a failing status code if changes are detected in the manpage outputs\. Th
 .TP
 \fB\-\-link\fR
 This is now done automatically by \fBbrew update\fR\.
+.
+.SS "\fBpr\-publish\fR \fIpull_request\fR"
+Publishes bottles for a pull request with GitHub Actions\. Requires write access to the repository\.
 .
 .SS "\fBprof\fR \fIcommand\fR"
 Run Homebrew with the Ruby profiler, e\.g\. \fBbrew prof readall\fR\.
@@ -1290,7 +1297,7 @@ Install macOS applications distributed as binaries\. See \fBbrew\-cask\fR(1)\.
     \fIhttps://github\.com/Homebrew/homebrew\-cask\fR
 .
 .SS "\fBbundle\fR \fIsubcommand\fR"
-Bundler for non\-Ruby dependencies from Homebrew, Homebrew Cask and the Mac App Store\.
+Bundler for non\-Ruby dependencies from Homebrew, Homebrew Cask, Mac App Store and Whalebrew\.
 .
 .P
 \fBbrew bundle\fR [\fBinstall\fR]
@@ -1302,7 +1309,7 @@ Install or upgrade all dependencies in a \fBBrewfile\fR\.
 \fBbrew bundle dump\fR
 .
 .P
-Write all installed casks/formulae/taps into a \fBBrewfile\fR\.
+Write all installed casks/formulae/images/taps into a \fBBrewfile\fR\.
 .
 .P
 \fBbrew bundle cleanup\fR
@@ -1371,6 +1378,10 @@ Read the \fBBrewfile\fR from \fB~/\.Brewfile\fR\.
 .TP
 \fB\-\-mas\fR
 \fBlist\fR Mac App Store dependencies\.
+.
+.TP
+\fB\-\-whalebrew\fR
+\fBlist\fR Whalebrew dependencies\.
 .
 .TP
 \fB\-\-describe\fR
@@ -1492,7 +1503,7 @@ If set, Homebrew will pass \fB\-\-verbose\fR when invoking \fBcurl\fR(1)\.
 .
 .TP
 \fBHOMEBREW_CURL_RETRIES\fR
-If set, Homebrew will pass the given retry count to \fB\-\-retry\fR when invoking \fBcurl\fR(1)\.
+If set, Homebrew will pass the given retry count to \fB\-\-retry\fR when invoking \fBcurl\fR(1)\. By default, \fBcurl\fR(1) is invoked with \fB\-\-retry 3\fR\.
 .
 .TP
 \fBHOMEBREW_DEBUG\fR
