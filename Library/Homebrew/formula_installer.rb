@@ -80,7 +80,7 @@ class FormulaInstaller
   # it's necessary to interrupt the user before any sort of installation
   # can proceed. Only invoked when the user has no developer tools.
   def self.prevent_build_flags
-    build_flags = ARGV.collect_build_flags
+    build_flags = Homebrew.args.collect_build_args
     return if build_flags.empty?
 
     all_bottled = ARGV.formulae.all?(&:bottled?)
@@ -160,6 +160,12 @@ class FormulaInstaller
 
   def check_install_sanity
     raise FormulaInstallationAlreadyAttemptedError, formula if self.class.attempted.include?(formula)
+
+    if formula.deprecated?
+      opoo "#{formula.full_name} has been deprecated!"
+    elsif formula.disabled?
+      odie "#{formula.full_name} has been disabled!"
+    end
 
     return if ignore_deps?
 

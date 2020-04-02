@@ -887,6 +887,33 @@ Generate Homebrew's manpages.
 Publishes bottles for a pull request with GitHub Actions. Requires write access
 to the repository.
 
+### `pr-pull` *`pull_request`*
+
+Download and publish bottles, and apply the bottle commit from a pull request
+with artifacts generated from GitHub Actions. Requires write access to the
+repository.
+
+* `--no-publish`:
+  Download the bottles, apply the bottle commit, and upload the bottles to Bintray, but don't publish them.
+* `--no-upload`:
+  Download the bottles and apply the bottle commit, but don't upload to Bintray.
+* `-n`, `--dry-run`:
+  Print what would be done rather than doing it.
+* `--clean`:
+  Do not amend the commits from pull requests.
+* `--branch-okay`:
+  Do not warn if pulling to a branch besides master (useful for testing).
+* `--resolve`:
+  When a patch fails to apply, leave in progress and allow user to resolve, instead of aborting.
+* `--workflow`:
+  Retrieve artifacts from the specified workflow (default: tests.yml).
+* `--artifact`:
+  Download artifacts with the specified name (default: bottles).
+* `--bintray-org`:
+  Upload to the specified Bintray organisation (default: homebrew).
+* `--tap`:
+  Target repository tap (default: homebrew/core).
+
 ### `prof` *`command`*
 
 Run Homebrew with the Ruby profiler, e.g. `brew prof readall`.
@@ -1199,7 +1226,7 @@ Note that environment variables must have a value set to be detected. For exampl
     `git`(1) remote. If set, instructs Homebrew to instead use the specified URL.
 
   * `HOMEBREW_CURLRC`:
-    If set, Homebrew will not pass `-q` when invoking `curl`(1), which disables
+    If set, Homebrew will not pass `--disable` when invoking `curl`(1), which disables
     the use of `curlrc`.
 
   * `HOMEBREW_CURL_VERBOSE`:

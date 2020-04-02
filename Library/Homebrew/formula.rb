@@ -6,6 +6,7 @@ require "lock_file"
 require "formula_pin"
 require "hardware"
 require "utils/bottles"
+require "utils/shebang"
 require "utils/shell"
 require "build_environment"
 require "build_options"
@@ -50,6 +51,7 @@ require "find"
 class Formula
   include FileUtils
   include Utils::Inreplace
+  include Utils::Shebang
   include Utils::Shell
   extend Enumerable
   extend Forwardable
@@ -1101,6 +1103,20 @@ class Formula
         to_check.start_with?(p.chomp("/") + "/") ||
         to_check =~ /^#{Regexp.escape(p).gsub('\*', ".*?")}$/
     end
+  end
+
+  # Whether this {Formula} is deprecated (i.e. warns on installation).
+  # Defaults to false.
+  # @return [Boolean]
+  def deprecated?
+    self.class.deprecated?
+  end
+
+  # Whether this {Formula} is disabled (i.e. cannot be installed).
+  # Defaults to false.
+  # @return [Boolean]
+  def disabled?
+    self.class.disabled?
   end
 
   def skip_cxxstdlib_check?
@@ -2601,6 +2617,34 @@ class Formula
     def pour_bottle?(&block)
       @pour_bottle_check = PourBottleCheck.new(self)
       @pour_bottle_check.instance_eval(&block)
+    end
+
+    # Deprecates a {Formula} so a warning is shown on each installation.
+    def deprecate!(date: nil)
+      return if date.present? && Date.parse(date) > Date.today
+
+      @deprecated = true
+    end
+
+    # Whether this {Formula} is deprecated (i.e. warns on installation).
+    # Defaults to false.
+    # @return [Boolean]
+    def deprecated?
+      @deprecated == true
+    end
+
+    # Disables a {Formula} so it cannot be installed.
+    def disable!(date: nil)
+      return if date.present? && Date.parse(date) > Date.today
+
+      @disabled = true
+    end
+
+    # Whether this {Formula} is disabled (i.e. cannot be installed).
+    # Defaults to false.
+    # @return [Boolean]
+    def disabled?
+      @disabled == true
     end
 
     # @private
