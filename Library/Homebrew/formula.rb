@@ -1352,8 +1352,7 @@ class Formula
     args << "-DHAVE_CLOCK_GETTIME:INTERNAL=0" if MacOS.version == "10.11" && MacOS::Xcode.version >= "8.0"
 
     # Ensure CMake is using the same SDK we are using.
-    sdk = MacOS.sdk_path_if_needed
-    args << "-DCMAKE_OSX_SYSROOT=#{sdk}" if sdk
+    args << "-DCMAKE_OSX_SYSROOT=#{MacOS.sdk_for_formula(self).path}" if MacOS.sdk_root_needed?
 
     args
   end
@@ -1891,7 +1890,7 @@ class Formula
   # system "make", "install"</pre>
   def system(cmd, *args)
     verbose = Homebrew.args.verbose?
-    verbose_using_dots = !ENV["HOMEBREW_VERBOSE_USING_DOTS"].nil?
+    verbose_using_dots = Homebrew::EnvConfig.verbose_using_dots?
 
     # remove "boring" arguments so that the important ones are more likely to
     # be shown considering that we trim long ohai lines to the terminal width
@@ -1962,8 +1961,7 @@ class Formula
       $stdout.flush
 
       unless $CHILD_STATUS.success?
-        log_lines = ENV["HOMEBREW_FAIL_LOG_LINES"]
-        log_lines ||= "15"
+        log_lines = Homebrew::EnvConfig.fail_log_lines
 
         log.flush
         if !verbose || verbose_using_dots
