@@ -185,7 +185,7 @@ merge_or_rebase() {
   then
     UPSTREAM_TAG="$(git tag --list |
                     sort --field-separator=. --key=1,1nr -k 2,2nr -k 3,3nr |
-                    grep --max-count=1 '^[0-9]*\.[0-9]*\.[0-9]*-legacy$')"
+                    grep --max-count=1 '^[0-9]\+\.[0-9]\+\.[0-9]\+-legacy$')"
   else
     UPSTREAM_TAG=""
   fi
@@ -277,7 +277,7 @@ EOS
   if [[ -n "$HOMEBREW_NO_UPDATE_CLEANUP" ]]
   then
     if [[ "$INITIAL_BRANCH" != "$UPSTREAM_BRANCH" && -n "$INITIAL_BRANCH" &&
-          ! "$INITIAL_BRANCH" =~ ^v[0-9]+\.[0-9]+\.[0-9]-legacy|stable$ ]]
+          ! "$INITIAL_BRANCH" =~ ^[0-9]+\.[0-9]+\.[0-9]+-legacy$|stable$ ]]
     then
       git checkout "$INITIAL_BRANCH" "${QUIET_ARGS[@]}"
     fi
