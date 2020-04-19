@@ -8,8 +8,9 @@ AllCops:
   Exclude:
     - '**/vendor/**/*'
 
-NewFormulaAudit:
-  Enabled: true
+# allow style to be disabled in non-formulae code
+Style/DisableCopsWithinSourceCodeDirective:
+  Enabled: false
 
 # Intentionally disabled as it doesn't fit with our code style.
 RSpec/AnyInstance:

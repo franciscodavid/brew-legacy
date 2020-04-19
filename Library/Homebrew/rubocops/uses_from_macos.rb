@@ -19,6 +19,7 @@ module RuboCop
           krb5
           libedit
           libffi
+          libiconv
           libpcap
           libxml2
           libxslt
@@ -26,7 +27,7 @@ module RuboCop
           m4
           ncurses
           openldap
-          openssl
+          openssl@1.1
           perl
           php
           ruby

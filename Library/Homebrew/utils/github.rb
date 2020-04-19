@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "download_strategy"
 require "tempfile"
 require "uri"
 
@@ -435,12 +434,12 @@ module GitHub
                   scopes:         CREATE_ISSUE_FORK_OR_PR_SCOPES)
   end
 
-  def fetch_artifact(user, repo, pr, dir, workflow_id: "tests.yml", artifact_name: "bottles")
+  def get_artifact_url(user, repo, pr, workflow_id: "tests.yml", artifact_name: "bottles")
     scopes = CREATE_ISSUE_FORK_OR_PR_SCOPES
     base_url = "#{API_URL}/repos/#{user}/#{repo}"
     pr_payload = open_api("#{base_url}/pulls/#{pr}", scopes: scopes)
     pr_sha = pr_payload["head"]["sha"]
-    pr_branch = pr_payload["head"]["ref"]
+    pr_branch = URI.encode_www_form_component(pr_payload["head"]["ref"])
 
     workflow = open_api("#{base_url}/actions/workflows/#{workflow_id}/runs?branch=#{pr_branch}", scopes: scopes)
     workflow_run = workflow["workflow_runs"].select do |run|
@@ -478,28 +477,35 @@ module GitHub
       EOS
     end
 
-    artifact_url = artifact.first["archive_download_url"]
+    artifact.first["archive_download_url"]
+  end
 
-    token, username = api_credentials
-    case api_credentials_type
-    when :env_username_password, :keychain_username_password
-      curl_args = { user: "#{username}:#{token}" }
-    when :env_token
-      curl_args = { header: "Authorization: token #{token}" }
-    when :none
-      raise Error, "Credentials must be set to access the Artifacts API"
-    end
-
-    # Download the artifact as a zip file and unpack it into `dir`. This is
-    # preferred over system `curl` and `tar` as this leverages the Homebrew
-    # cache to avoid repeated downloads of (possibly large) bottles.
-    FileUtils.chdir dir do
-      curl_args[:cache] = Pathname.new(dir)
-      curl_args[:secrets] = [token]
-      downloader = CurlDownloadStrategy.new(artifact_url, "artifact", pr, **curl_args)
-      downloader.fetch
-      downloader.stage
-    end
+  def sponsors_by_tier(user)
+    url = "https://api.github.com/graphql"
+    data = {
+      query: <<~EOS,
+          {
+            organization(login: "#{user}") {
+              sponsorsListing {
+                tiers(first: 100) {
+                  nodes {
+                    monthlyPriceInDollars
+                    adminInfo {
+                    sponsorships(first: 100) {
+                      totalCount
+                      nodes {
+                        sponsor { login }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      EOS
+    }
+    open_api(url, scopes: ["admin:org", "user"], data: data, request_method: "POST")
   end
 
   def api_errors

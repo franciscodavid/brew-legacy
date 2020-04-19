@@ -1,22 +1,17 @@
 # frozen_string_literal: true
 
-require "cmd/style"
-require "cmd/shared_examples/args_parse"
+require "style"
 
-describe "Homebrew.style_args" do
-  it_behaves_like "parseable arguments"
-end
-
-describe "brew style" do
+describe Homebrew::Style do
   around do |example|
     FileUtils.ln_s HOMEBREW_LIBRARY_PATH, HOMEBREW_LIBRARY/"Homebrew"
-    FileUtils.ln_s HOMEBREW_LIBRARY_PATH.parent/".rubocop.yml", HOMEBREW_LIBRARY/".rubocop_audit.yml"
+    FileUtils.ln_s HOMEBREW_LIBRARY_PATH.parent/".rubocop.yml", HOMEBREW_LIBRARY/".rubocop.yml"
     FileUtils.ln_s HOMEBREW_LIBRARY_PATH.parent/".rubocop_shared.yml", HOMEBREW_LIBRARY/".rubocop_shared.yml"
 
     example.run
   ensure
     FileUtils.rm_f HOMEBREW_LIBRARY/"Homebrew"
-    FileUtils.rm_f HOMEBREW_LIBRARY/".rubocop_audit.yml"
+    FileUtils.rm_f HOMEBREW_LIBRARY/".rubocop.yml"
     FileUtils.rm_f HOMEBREW_LIBRARY/".rubocop_shared.yml"
   end
 
@@ -24,7 +19,7 @@ describe "brew style" do
     allow(Homebrew).to receive(:install_bundler_gems!)
   end
 
-  describe "Homebrew::check_style_json" do
+  describe ".check_style_json" do
     let(:dir) { mktmpdir }
 
     it "returns RubocopResults when RuboCop reports offenses" do
@@ -36,7 +31,7 @@ describe "brew style" do
         end
       EOS
 
-      rubocop_result = Homebrew::Style.check_style_json([formula])
+      rubocop_result = described_class.check_style_json([formula])
 
       expect(rubocop_result.file_offenses(formula.realpath.to_s).map(&:message))
         .to include("Extra empty line detected at class body beginning.")
@@ -60,16 +55,16 @@ describe "brew style" do
           end
         end
       EOS
-      rubocop_result = Homebrew::Style.check_style_json(
+      rubocop_result = described_class.check_style_json(
         [formula],
-        fix: true, only_cops: ["NewFormulaAudit/DependencyOrder"],
+        fix: true, only_cops: ["FormulaAudit/DependencyOrder"],
       )
       offense_string = rubocop_result.file_offenses(formula.realpath).first.to_s
       expect(offense_string).to match(/\[Corrected\]/)
     end
   end
 
-  describe "Homebrew::check_style_and_print" do
+  describe ".check_style_and_print" do
     let(:dir) { mktmpdir }
 
     it "returns false for conforming file with only audit-level violations" do
@@ -77,7 +72,7 @@ describe "brew style" do
       # but not regular, cop violations
       target_file = HOMEBREW_LIBRARY_PATH/"utils.rb"
 
-      rubocop_result = Homebrew::Style.check_style_and_print([target_file])
+      rubocop_result = described_class.check_style_and_print([target_file])
 
       expect(rubocop_result).to eq true
     end
