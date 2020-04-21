@@ -13,7 +13,7 @@ module Homebrew
         super
 
         self[:remaining] = []
-        self[:cmdline_args] = ARGV_WITHOUT_MONKEY_PATCHING.dup
+        self[:cmdline_args] = ARGV.dup.freeze
 
         @args_parsed = false
         @processed_options = []
@@ -178,6 +178,12 @@ module Homebrew
         #return true if args_parsed && (build_from_source? || s?)
 
         #cmdline_args.include?("--build-from-source") || cmdline_args.include?("-s")
+      end
+
+      def force_bottle
+        return true if args_parsed && force_bottle?
+
+        cmdline_args.include?("--force-bottle")
       end
 
       private
