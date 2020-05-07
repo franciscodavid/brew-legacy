@@ -3,11 +3,11 @@
 #:  Print export statements. When run in a shell, this installation of Homebrew will be added to your `PATH`, `MANPATH`, and `INFOPATH`.
 #:
 #:  The variables `HOMEBREW_PREFIX`, `HOMEBREW_CELLAR` and `HOMEBREW_REPOSITORY` are also exported to avoid querying them multiple times.
-#:  Consider adding evaluation of this command's output to your dotfiles (e.g. `~/.profile` or `~/.zprofile`) with: `eval $(brew shellenv)`
+#:  Consider adding evaluation of this command's output to your dotfiles (e.g. `~/.bash_profile` or `~/.zprofile`) with: `eval $(brew shellenv)`
 
 homebrew-shellenv() {
   case "$SHELL" in
-    */fish)
+    */fish|fish)
       echo "set -gx HOMEBREW_PREFIX \"$HOMEBREW_PREFIX\";"
       echo "set -gx HOMEBREW_CELLAR \"$HOMEBREW_CELLAR\";"
       echo "set -gx HOMEBREW_REPOSITORY \"$HOMEBREW_REPOSITORY\";"
@@ -15,7 +15,7 @@ homebrew-shellenv() {
       echo "set -q MANPATH; or set MANPATH ''; set -gx MANPATH \"$HOMEBREW_PREFIX/share/man\" \$MANPATH;"
       echo "set -q INFOPATH; or set INFOPATH ''; set -gx INFOPATH \"$HOMEBREW_PREFIX/share/info\" \$INFOPATH;"
       ;;
-    */csh|*/tcsh)
+    */csh|csh|*/tcsh|tcsh)
       echo "setenv HOMEBREW_PREFIX $HOMEBREW_PREFIX;"
       echo "setenv HOMEBREW_CELLAR $HOMEBREW_CELLAR;"
       echo "setenv HOMEBREW_REPOSITORY $HOMEBREW_REPOSITORY;"

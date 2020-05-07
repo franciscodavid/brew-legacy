@@ -95,7 +95,7 @@ class SoftwareSpec
 
   def bottled?
     bottle_specification.tag?(Utils::Bottles.tag) && \
-      (bottle_specification.compatible_cellar? || Homebrew.args.force_bottle)
+      (bottle_specification.compatible_cellar? || Homebrew.args.force_bottle?)
   end
 
   def bottle(disable_type = nil, disable_reason = nil, &block)
@@ -171,7 +171,8 @@ class SoftwareSpec
     add_dep_option(dep) if dep
   end
 
-  def uses_from_macos(spec)
+  def uses_from_macos(spec, _bounds = {})
+    spec = Hash[*spec.first] if spec.is_a?(Hash)
     depends_on(spec)
   end
 

@@ -49,9 +49,9 @@ class FormulaInstaller
     @show_header = false
     @ignore_deps = false
     @only_deps = false
-    @build_from_source = Homebrew.args.build_from_source
+    @build_from_source = Homebrew.args.build_from_source?
     @build_bottle = false
-    @force_bottle = Homebrew.args.force_bottle
+    @force_bottle = Homebrew.args.force_bottle?
     @include_test = ARGV.include?("--include-test")
     @interactive = false
     @git = false
@@ -82,7 +82,7 @@ class FormulaInstaller
     build_flags = Homebrew.args.collect_build_args
     return if build_flags.empty?
 
-    all_bottled = ARGV.formulae.all?(&:bottled?)
+    all_bottled = Homebrew.args.formulae.all?(&:bottled?)
     raise BuildFlagsError.new(build_flags, bottled: all_bottled)
   end
 
@@ -753,7 +753,7 @@ class FormulaInstaller
     ].concat(build_argv)
 
     Utils.safe_fork do
-      if Sandbox.formula?(formula)
+      if Sandbox.available?
         sandbox = Sandbox.new
         formula.logs.mkpath
         sandbox.record_log(formula.logs/"build.sandbox.log")
@@ -922,7 +922,7 @@ class FormulaInstaller
     ]
 
     Utils.safe_fork do
-      if Sandbox.formula?(formula)
+      if Sandbox.available?
         sandbox = Sandbox.new
         formula.logs.mkpath
         sandbox.record_log(formula.logs/"postinstall.sandbox.log")
