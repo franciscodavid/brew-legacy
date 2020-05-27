@@ -162,7 +162,7 @@ module SharedEnvExtension
   #   ENV.append_to_cflags "-I ./missing/includes"
   # end</pre>
   def compiler
-    @compiler ||= if (cc = ARGV.cc)
+    @compiler ||= if (cc = Homebrew.args.cc)
       warn_about_non_apple_gcc($&) if cc =~ GNU_GCC_REGEXP
       fetch_compiler(cc, "--cc")
     elsif (cc = homebrew_cc)
@@ -255,7 +255,7 @@ module SharedEnvExtension
   # @private
   def effective_arch
     if Homebrew.args.build_bottle? && Homebrew.args.bottle_arch
-      Homebrew.args.bottle_arch
+      Homebrew.args.bottle_arch.to_sym
     else
       Hardware.oldest_cpu
     end
