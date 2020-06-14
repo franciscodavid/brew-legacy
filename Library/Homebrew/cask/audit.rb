@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "cask/blacklist"
+require "cask/denylist"
 require "cask/checkable"
 require "cask/download"
 require "digest"
@@ -32,7 +32,7 @@ module Cask
     end
 
     def run!
-      check_blacklist
+      check_denylist
       check_required_stanzas
       check_version
       check_sha256
@@ -259,7 +259,7 @@ module Cask
       bad_url_format?(/sourceforge/,
                       [
                         %r{\Ahttps://sourceforge\.net/projects/[^/]+/files/latest/download\Z},
-                        %r{\Ahttps://downloads\.sourceforge\.net/(?!(project|sourceforge)\/)},
+                        %r{\Ahttps://downloads\.sourceforge\.net/(?!(project|sourceforge)/)},
                       ])
     end
 
@@ -307,23 +307,27 @@ module Cask
     def check_appcast_contains_version
       return unless appcast?
       return if cask.appcast.to_s.empty?
-      return if cask.appcast.configuration == :no_check
+      return if cask.appcast.must_contain == :no_check
 
       appcast_stanza = cask.appcast.to_s
-      appcast_contents, = curl_output("--compressed", "--user-agent", HOMEBREW_USER_AGENT_FAKE_SAFARI, "--location",
-                                      "--globoff", "--max-time", "5", appcast_stanza)
+      appcast_contents, = begin
+        curl_output("--compressed", "--user-agent", HOMEBREW_USER_AGENT_FAKE_SAFARI, "--location",
+                    "--globoff", "--max-time", "5", appcast_stanza)
+      rescue
+        add_error "appcast at URL '#{appcast_stanza}' offline or looping"
+        return
+      end
+
       version_stanza = cask.version.to_s
-      adjusted_version_stanza = if cask.appcast.configuration.blank?
-        version_stanza.split(",")[0].split("-")[0].split("_")[0]
+      adjusted_version_stanza = if cask.appcast.must_contain.blank?
+        version_stanza.match(/^[[:alnum:].]+/)[0]
       else
-        cask.appcast.configuration
+        cask.appcast.must_contain
       end
       return if appcast_contents.include? adjusted_version_stanza
 
       add_warning "appcast at URL '#{appcast_stanza}' does not contain"\
                   " the version number '#{adjusted_version_stanza}':\n#{appcast_contents}"
-    rescue
-      add_error "appcast at URL '#{appcast_stanza}' offline or looping"
     end
 
     def check_github_repository
@@ -370,11 +374,11 @@ module Cask
       [user, repo]
     end
 
-    def check_blacklist
+    def check_denylist
       return if cask.tap&.user != "Homebrew"
-      return unless reason = Blacklist.blacklisted_reason(cask.token)
+      return unless reason = Denylist.reason(cask.token)
 
-      add_error "#{cask.token} is blacklisted: #{reason}"
+      add_error "#{cask.token} is not allowed: #{reason}"
     end
 
     def check_https_availability

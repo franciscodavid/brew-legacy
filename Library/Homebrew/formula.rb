@@ -1088,7 +1088,7 @@ class Formula
   end
 
   # Sometimes we accidentally install files outside prefix. After we fix that,
-  # users will get nasty link conflict error. So we create a whitelist here to
+  # users will get nasty link conflict error. So we create an allowlist here to
   # allow overwriting certain files. e.g.
   #   link_overwrite "bin/foo", "lib/bar"
   #   link_overwrite "share/man/man1/baz-*"
@@ -1111,7 +1111,7 @@ class Formula
       begin
         Formulary.factory(keg.name)
       rescue FormulaUnavailableError
-        # formula for this keg is deleted, so defer to whitelist
+        # formula for this keg is deleted, so defer to allowlist
       rescue TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
         return false # this keg belongs to another formula
       else
@@ -2327,9 +2327,9 @@ class Formula
     #   prefix "/opt/homebrew" # Optional HOMEBREW_PREFIX in which the bottles were built.
     #   cellar "/opt/homebrew/Cellar" # Optional HOMEBREW_CELLAR in which the bottles were built.
     #   rebuild 1 # Making the old bottle outdated without bumping the version/revision of the formula.
-    #   sha256 "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865" => :el_capitan
-    #   sha256 "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3" => :yosemite
-    #   sha256 "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2" => :mavericks
+    #   sha256 "ef65c759c5097a36323fa9c77756468649e8d1980a3a4e05695c05e39568967c" => :catalina
+    #   sha256 "28f4090610946a4eb207df102d841de23ced0d06ba31cb79e040d883906dcd4f" => :mojave
+    #   sha256 "91dd0caca9bd3f38c439d5a7b6f68440c4274945615fae035ff0a369264b8a2f" => :high_sierra
     # end</pre>
     #
     # Only formulae where the upstream URL breaks or moves frequently, require compiling
@@ -2383,10 +2383,12 @@ class Formula
     #   depends_on "cairo"
     #   depends_on "pixman"
     # end</pre>
+    # @private
     def devel(&block)
       @devel ||= SoftwareSpec.new
       return @devel unless block_given?
 
+      odeprecated "'devel' blocks in formulae", "'head' blocks or @-versioned formulae"
       @devel.instance_eval(&block)
     end
 
@@ -2414,7 +2416,7 @@ class Formula
     end
 
     # Additional downloads can be defined as resources and accessed in the
-    # install method. Resources can also be defined inside a {.stable}, {.devel} or
+    # install method. Resources can also be defined inside a {.stable} or
     # {.head} block. This mechanism replaces ad-hoc "subformula" classes.
     # <pre>resource "additional_files" do
     #   url "https://example.com/additional-stuff.tar.gz"
@@ -2450,7 +2452,7 @@ class Formula
     # <pre># Optional and enforce that boost is built with `--with-c++11`.
     # depends_on "boost" => [:optional, "with-c++11"]</pre>
     # <pre># If a dependency is only needed in certain cases:
-    # depends_on "sqlite" if MacOS.version == :mavericks
+    # depends_on "sqlite" if MacOS.version == :catalina
     # depends_on :xcode # If the formula really needs full Xcode.
     # depends_on :macos => :mojave # Needs at least macOS Mojave (10.14).
     # depends_on :x11 => :optional # X11/XQuartz components.
@@ -2472,13 +2474,13 @@ class Formula
       specs.each { |spec| spec.uses_from_macos(dep, bounds) }
     end
 
-    # Block executed only executed on macOS. No-op on Linux.
+    # Block only executed on macOS. No-op on Linux.
     # <pre>on_macos do
     #   depends_on "mac_only_dep"
     # end</pre>
     def on_macos(&_block); end
 
-    # Block executed only executed on Linux. No-op on macOS.
+    # Block only executed on Linux. No-op on macOS.
     # <pre>on_linux do
     #   depends_on "linux_only_dep"
     # end</pre>
@@ -2524,7 +2526,7 @@ class Formula
     #   sha256 "c6bc3f48ce8e797854c4b865f6a8ff969867bbcaebd648ae6fd825683e59fef2"
     # end</pre>
     #
-    # Patches can be declared in stable, devel, and head blocks. This form is
+    # Patches can be declared in stable and head blocks. This form is
     # preferred over using conditionals.
     # <pre>stable do
     #   patch do
@@ -2608,12 +2610,12 @@ class Formula
     # end</pre>
     #
     # The block may be omitted, and if present the build may be omitted;
-    # if so, then the compiler will be blacklisted for *all* versions.
+    # if so, then the compiler will not be allowed for *all* versions.
     #
     # `major_version` should be the major release number only, for instance
     # '7' for the GCC 7 series (7.0, 7.1, etc.).
-    # If `version` or the block is omitted, then the compiler will be
-    # blacklisted for all compilers in that series.
+    # If `version` or the block is omitted, then the compiler will
+    # not be allowed for all compilers in that series.
     #
     # For example, if a bug is only triggered on GCC 7.1 but is not
     # encountered on 7.2:
@@ -2670,7 +2672,7 @@ class Formula
     #   regex /foo-(\d+(?:\.\d+)+)\.tar/
     # end</pre>
     def livecheck(&block)
-      @livecheck ||= Livecheck.new
+      @livecheck ||= Livecheck.new(self)
       return @livecheck unless block_given?
 
       @livecheckable = true
