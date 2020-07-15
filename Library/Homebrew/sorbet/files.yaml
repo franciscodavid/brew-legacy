@@ -163,11 +163,13 @@ false:
   - ./dev-cmd/release-notes.rb
   - ./dev-cmd/ruby.rb
   - ./dev-cmd/sh.rb
+  - ./dev-cmd/sponsors.rb
   - ./dev-cmd/style.rb
   - ./dev-cmd/tap-new.rb
   - ./dev-cmd/test.rb
   - ./dev-cmd/tests.rb
   - ./dev-cmd/unpack.rb
+  - ./dev-cmd/update-license-data.rb
   - ./dev-cmd/update-test.rb
   - ./dev-cmd/vendor-gems.rb
   - ./development_tools.rb
@@ -185,6 +187,7 @@ false:
   - ./extend/os/linux/hardware/cpu.rb
   - ./extend/os/linux/install.rb
   - ./extend/os/linux/keg_relocate.rb
+  - ./extend/os/linux/readall.rb
   - ./extend/os/linux/requirements/osxfuse_requirement.rb
   - ./extend/os/linux/system_config.rb
   - ./extend/os/linux/tap.rb
@@ -348,6 +351,7 @@ false:
   - ./test/dev-cmd/audit_spec.rb
   - ./test/dev-cmd/create_spec.rb
   - ./test/dev-cmd/extract_spec.rb
+  - ./test/dev-cmd/update-license-data_spec.rb
   - ./test/diagnostic_checks_spec.rb
   - ./test/download_strategies_spec.rb
   - ./test/error_during_execution_spec.rb
@@ -443,18 +447,15 @@ false:
   - ./unpack_strategy/xar.rb
   - ./unpack_strategy/xz.rb
   - ./unpack_strategy/zip.rb
+  - ./upgrade.rb
   - ./utils.rb
   - ./utils/analytics.rb
-  - ./utils/bottles.rb
   - ./utils/curl.rb
   - ./utils/fork.rb
   - ./utils/formatter.rb
   - ./utils/git.rb
   - ./utils/github.rb
-  - ./utils/notability.rb
   - ./utils/popen.rb
-  - ./utils/tty.rb
-  - ./utils/user.rb
 
 false:
   - ./PATH.rb
@@ -601,6 +602,7 @@ false:
   - ./test/dev-cmd/release-notes_spec.rb
   - ./test/dev-cmd/ruby_spec.rb
   - ./test/dev-cmd/sh_spec.rb
+  - ./test/dev-cmd/sponsors_spec.rb
   - ./test/dev-cmd/style_spec.rb
   - ./test/dev-cmd/tap-new_spec.rb
   - ./test/dev-cmd/test_spec.rb
@@ -652,6 +654,7 @@ false:
   - ./test/rubocops/components_redundancy_spec.rb
   - ./test/rubocops/conflicts_spec.rb
   - ./test/rubocops/dependency_order_spec.rb
+  - ./test/rubocops/deprecate_spec.rb
   - ./test/rubocops/formula_desc_spec.rb
   - ./test/rubocops/homepage_spec.rb
   - ./test/rubocops/lines_spec.rb
@@ -845,10 +848,6 @@ false:
   - ./unpack_strategy/uncompressed.rb
   - ./utils/gems.rb
   - ./utils/inreplace.rb
-  - ./utils/link.rb
-  - ./utils/shebang.rb
-  - ./utils/shell.rb
-  - ./utils/svn.rb
   - ./version.rb
 
 true:
@@ -884,9 +883,18 @@ true:
   - ./rubocops/cask/ast/stanza.rb
   - ./rubocops/cask/constants/stanza.rb
   - ./rubocops/cask/extend/string.rb
+  - ./rubocops/deprecate.rb
   - ./tap_constants.rb
   - ./test/support/helper/fixtures.rb
   - ./test/support/lib/config.rb
+  - ./utils/bottles.rb
+  - ./utils/link.rb
+  - ./utils/notability.rb
+  - ./utils/shebang.rb
+  - ./utils/shell.rb
+  - ./utils/svn.rb
+  - ./utils/tty.rb
+  - ./utils/user.rb
   - ./version/null.rb
 
 strict:
@@ -918,6 +926,7 @@ strict:
   - ./extend/os/mac/formula_support.rb
   - ./extend/os/missing_formula.rb
   - ./extend/os/pathname.rb
+  - ./extend/os/readall.rb
   - ./extend/os/requirements/java_requirement.rb
   - ./extend/os/requirements/osxfuse_requirement.rb
   - ./extend/os/requirements/x11_requirement.rb

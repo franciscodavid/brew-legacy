@@ -46,7 +46,7 @@ RSpec.shared_context "integration test" do
 
     example.run
   ensure
-    FileUtils.rm_r HOMEBREW_PREFIX/"bin"
+    FileUtils.rm_rf HOMEBREW_PREFIX/"bin"
   end
 
   # Generate unique ID to be able to
@@ -160,6 +160,12 @@ RSpec.shared_context "integration test" do
     when "patchelf"
       content = <<~RUBY
         url "https://brew.sh/#{name}-1.0"
+      RUBY
+
+    when "package_license"
+      content = <<~RUBY
+        url "https://brew.sh/#patchelf-1.0"
+        license "0BSD"
       RUBY
     end
 

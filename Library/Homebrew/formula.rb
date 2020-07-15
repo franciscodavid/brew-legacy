@@ -351,6 +351,9 @@ class Formula
   # @see .desc=
   delegate desc: :"self.class"
 
+  # The SPDX ID of the software license.
+  delegate license: :"self.class"
+
   # The homepage for the software.
   # @method homepage
   # @see .homepage=
@@ -492,6 +495,10 @@ class Formula
   # The link status symlink directory for this {Formula}.
   # You probably want {#opt_prefix} instead.
   def linked_keg
+    linked_keg = possible_names.map { |name| HOMEBREW_LINKED_KEGS/name }
+                               .find(&:directory?)
+    return linked_keg if linked_keg.present?
+
     HOMEBREW_LINKED_KEGS/name
   end
 
@@ -595,7 +602,10 @@ class Formula
   # All currently installed prefix directories.
   # @private
   def installed_prefixes
-    rack.directory? ? rack.subdirs.sort : []
+    possible_names.map { |name| HOMEBREW_CELLAR/name }
+                  .select(&:directory?)
+                  .flat_map(&:subdirs)
+                  .sort_by(&:basename)
   end
 
   # All currently installed kegs.
@@ -1109,13 +1119,14 @@ class Formula
       return false if tab_tap.nil?
 
       begin
-        Formulary.factory(keg.name)
+        f = Formulary.factory(keg.name)
       rescue FormulaUnavailableError
         # formula for this keg is deleted, so defer to allowlist
       rescue TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
         return false # this keg belongs to another formula
       else
-        return false # this keg belongs to another formula
+        # this keg belongs to another unrelated formula
+        return false unless f.possible_names.include?(keg.name)
       end
     end
     to_check = path.relative_path_from(HOMEBREW_PREFIX).to_s
@@ -1345,6 +1356,11 @@ class Formula
     name <=> other.name
   end
 
+  # @private
+  def possible_names
+    [name, oldname, *aliases].compact
+  end
+
   def to_s
     name
   end
@@ -1404,7 +1420,7 @@ class Formula
 
   # Standard parameters for meson builds.
   def std_meson_args
-    ["--prefix=#{prefix}", "--libdir=#{lib}"]
+    ["--prefix=#{prefix}", "--libdir=#{lib}", "--buildtype=release"]
   end
 
   def shared_library(name, version = nil)
@@ -1602,8 +1618,8 @@ class Formula
     Formula.cache[:opt_or_installed_prefix_keg] ||= {}
     Formula.cache[:opt_or_installed_prefix_keg][name] ||= if optlinked? && opt_prefix.exist?
       Keg.new(opt_prefix)
-    elsif installed_prefix.directory?
-      Keg.new(installed_prefix)
+    elsif (latest_installed_prefix = installed_prefixes.last)
+      Keg.new(latest_installed_prefix)
     end
   end
 
@@ -1687,6 +1703,7 @@ class Formula
       "aliases"                  => aliases.sort,
       "versioned_formulae"       => versioned_formulae.map(&:name),
       "desc"                     => desc,
+      "license"                  => license,
       "homepage"                 => homepage,
       "versions"                 => {
         "stable" => stable&.version&.to_s,
@@ -1897,12 +1914,10 @@ class Formula
     keg = opt_or_installed_prefix_keg
     return [] unless keg
 
-    undeclared_deps = CacheStoreDatabase.use(:linkage) do |db|
+    CacheStoreDatabase.use(:linkage) do |db|
       linkage_checker = LinkageChecker.new(keg, self, cache_db: db)
       linkage_checker.undeclared_deps.map { |n| Dependency.new(n) }
     end
-
-    undeclared_deps
   end
 
   public
@@ -2210,6 +2225,13 @@ class Formula
     #
     # <pre>desc "Example formula"</pre>
     attr_rw :desc
+
+    # @!attribute [w]
+    # The SPDX ID of the open-source license that the formula uses.
+    # Shows when running `brew info`.
+    #
+    # <pre>license "BSD-2-Clause"</pre>
+    attr_rw :license
 
     # @!attribute [w] homepage
     # The homepage for the software. Used by users to get more information
@@ -2648,9 +2670,13 @@ class Formula
     #
     # The block will create, run in and delete a temporary directory.
     #
-    # We are fine if the executable does not error out, so we know linking
-    # and building the software was OK.
-    # <pre>system bin/"foobar", "--version"</pre>
+    # We want tests that don't require any user input
+    # and test the basic functionality of the application.
+    # For example foo build-foo input.foo is a good test
+    # and foo --version and foo --help are bad tests.
+    # However, a bad test is better than no test at all.
+    #
+    # See: https://docs.brew.sh/Formula-Cookbook#add-a-test-to-the-formula
     #
     # <pre>(testpath/"test.file").write <<~EOS
     #   writing some test file, if you need to

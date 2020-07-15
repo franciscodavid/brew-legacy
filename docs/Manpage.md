@@ -290,6 +290,8 @@ If *`formula`* is provided, summarise the paths within its current keg.
   Only show formulae with multiple versions installed.
 * `--pinned`:
   Show the versions of pinned formulae, or only the specified (pinned) formulae if *`formula`* are provided. See also `pin`, `unpin`.
+* `--cask`:
+  List casks
 * `-1`:
   Force output to be one entry per line. This is the default when output is not to a terminal.
 * `-l`:
@@ -369,10 +371,10 @@ Rerun the post-install steps for *`formula`*.
 
 ### `readall` [*`options`*] [*`tap`*]
 
-Import all formulae from the specified *`tap`*, or from all installed taps if none
-is provided. This can be useful for debugging issues across all formulae when
-making significant changes to `formula.rb`, testing the performance of loading
-all formulae or checking if any current formulae have Ruby issues.
+Import all items from the specified *`tap`*, or from all installed taps if none is
+provided. This can be useful for debugging issues across all items when making
+significant changes to `formula.rb`, testing the performance of loading all
+items or checking if any current formulae/casks have Ruby issues.
 
 * `--aliases`:
   Verify any alias symlinks in each tap.
@@ -793,6 +795,8 @@ a simple example. For the complete API, see:
   Explicitly set the *`name`* of the new formula.
 * `--set-version`:
   Explicitly set the *`version`* of the new formula.
+* `--set-license`:
+  Explicitly set the *`license`* of the new formula.
 * `--tap`:
   Generate the new formula within the given tap, specified as *`user`*`/`*`repo`*.
 
@@ -901,6 +905,8 @@ repository.
   Do not warn if pulling to a branch besides master (useful for testing).
 * `--resolve`:
   When a patch fails to apply, leave in progress and allow user to resolve, instead of aborting.
+* `--warn-on-upload-failure`:
+  Warn instead of raising an error if the bottle upload fails. Useful for repairing bottle uploads that previously failed.
 * `--workflow`:
   Retrieve artifacts from the specified workflow (default: `tests.yml`).
 * `--artifact`:
@@ -920,8 +926,12 @@ Apply the bottle commit and publish bottles to Bintray.
 
 * `--no-publish`:
   Apply the bottle commit and upload the bottles, but don't publish them.
+* `--keep-old`:
+  If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL.
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
+* `--warn-on-upload-failure`:
+  Warn instead of raising an error if the bottle upload fails. Useful for repairing bottle uploads that previously failed.
 * `--bintray-org`:
   Upload to the specified Bintray organisation (default: `homebrew`).
 * `--root-url`:
@@ -960,6 +970,11 @@ build systems would not find otherwise.
 
 * `--env`:
   Use the standard `PATH` instead of superenv's when `std` is passed.
+
+### `sponsors`
+
+Print a Markdown summary of Homebrew's GitHub Sponsors, suitable for pasting
+into a README.
 
 ### `style` [*`options`*] [*`file`*|*`tap`*|*`formula`*]
 
@@ -1027,6 +1042,13 @@ directory.
   Patches for *`formula`* will be applied to the unpacked source.
 * `-g`, `--git`:
   Initialise a Git repository in the unpacked source. This is useful for creating patches for the software.
+
+### `update_license_data` *`cmd`*
+
+ Update SPDX license data in the Homebrew repository.
+
+* `--fail-if-changed`:
+  Return a failing status code if current license data's version is different from the upstream. This can be used to notify CI when the SPDX license data is out of date.
 
 ### `update-test` [*`options`*]
 
@@ -1373,6 +1395,9 @@ Note that environment variables must have a value set to be detected. For exampl
     Output this many lines of output on formula `system` failures.
 
     *Default:* `15`.
+
+  * `HOMEBREW_FORBIDDEN_LICENSES`:
+    A space-separated list of licenses. Homebrew will refuse to install a formula if that formula or any of its dependencies has a license on this list.
 
   * `HOMEBREW_FORCE_BREWED_CURL`:
     If set, always use a Homebrew-installed `curl`(1) rather than the system version. Automatically set if the system version of `curl` is too old.

@@ -6,7 +6,7 @@ require "erb"
 module Homebrew
   class FormulaCreator
     attr_reader :url, :sha256, :desc, :homepage
-    attr_accessor :name, :version, :tap, :path, :mode
+    attr_accessor :name, :version, :tap, :path, :mode, :license
 
     def url=(url)
       @url = url
@@ -91,14 +91,16 @@ module Homebrew
         <% end %>
           desc "#{desc}"
           homepage "#{homepage}"
-        <% if head? %>
-          head "#{url}"
-        <% else %>
+        <% unless head? %>
           url "#{url}"
         <% unless version.nil? or version.detected_from_url? %>
           version "#{version}"
         <% end %>
           sha256 "#{sha256}"
+        <% end %>
+          license "#{license}"
+        <% if head? %>
+          head "#{url}"
         <% end %>
 
         <% if mode == :cmake %>

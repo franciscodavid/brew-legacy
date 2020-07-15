@@ -17,6 +17,7 @@ require "linkage_checker"
 require "install"
 require "messages"
 require "cask/cask_loader"
+require "cmd/install"
 require "find"
 
 class FormulaInstaller
@@ -37,8 +38,7 @@ class FormulaInstaller
   end
 
   attr_reader :formula
-  attr_accessor :options, :build_bottle
-  attr_accessor :installed_as_dependency, :installed_on_request, :link_keg
+  attr_accessor :options, :build_bottle, :installed_as_dependency, :installed_on_request, :link_keg
 
   mode_attr_accessor :show_summary_heading, :show_header
   mode_attr_accessor :build_from_source, :force_bottle, :include_test
@@ -75,6 +75,14 @@ class FormulaInstaller
 
   def self.clear_attempted
     @attempted = Set.new
+  end
+
+  def self.installed
+    @installed ||= Set.new
+  end
+
+  def self.clear_installed
+    @installed = Set.new
   end
 
   # When no build tools are available and build flags are passed through ARGV,
@@ -141,6 +149,8 @@ class FormulaInstaller
   def prelude
     Tab.clear_cache
     verify_deps_exist unless ignore_deps?
+    forbidden_license_check
+
     check_install_sanity
   end
 
@@ -292,7 +302,7 @@ class FormulaInstaller
 
     self.class.attempted << formula
 
-    if pour_bottle?(warn: true)
+    if pour_bottle?
       begin
         pour
       rescue Exception => e # rubocop:disable Lint/RescueException
@@ -390,9 +400,7 @@ class FormulaInstaller
   def compute_dependencies
     req_map, req_deps = expand_requirements
     check_requirements(req_map)
-    deps = expand_dependencies(req_deps + formula.deps)
-
-    deps
+    expand_dependencies(req_deps + formula.deps)
   end
 
   # Check that each dependency in deps has a bottle available, terminating
@@ -700,6 +708,8 @@ class FormulaInstaller
 
     ohai "Summary" if verbose? || show_summary_heading?
     puts summary
+
+    self.class.installed << formula
   ensure
     unlock
   end
@@ -850,7 +860,7 @@ class FormulaInstaller
       if formula.link_overwrite?(conflict_file) && !link_overwrite_backup.key?(conflict_file)
         backup_file = backup_dir/conflict_file.relative_path_from(HOMEBREW_PREFIX).to_s
         backup_file.parent.mkpath
-        conflict_file.rename backup_file
+        FileUtils.mv conflict_file, backup_file
         link_overwrite_backup[conflict_file] = backup_file
         retry
       end
@@ -882,7 +892,7 @@ class FormulaInstaller
         keg.unlink
         link_overwrite_backup.each do |origin, backup|
           origin.parent.mkpath
-          backup.rename origin
+          FileUtils.mv backup, origin
         end
       end
       Homebrew.failed = true
@@ -983,11 +993,24 @@ class FormulaInstaller
 
     return if only_deps?
 
-    unless pour_bottle?
-      formula.fetch_patches
-      formula.resources.each(&:fetch)
-    end
+    if pour_bottle?(warn: true)
+      begin
+        downloader.fetch
+      rescue Exception => e # rubocop:disable Lint/RescueException
+        raise if Homebrew::EnvConfig.developer? ||
+                 Homebrew::EnvConfig.no_bottle_source_fallback? ||
+                 e.is_a?(Interrupt)
 
+        @pour_failed = true
+        onoe e.message
+        opoo "Bottle installation failed: building from source."
+        fetch_dependencies
+      end
+    end
+    return if pour_bottle?
+
+    formula.fetch_patches
+    formula.resources.each(&:fetch)
     downloader.fetch
   end
 
@@ -1081,5 +1104,28 @@ class FormulaInstaller
     return if @requirement_messages.empty?
 
     $stderr.puts @requirement_messages
+  end
+
+  def forbidden_license_check
+    forbidden_licenses = Homebrew::EnvConfig.forbidden_licenses.to_s.split(" ")
+    return if forbidden_licenses.blank?
+
+    compute_dependencies.each do |dep, _|
+      next if @ignore_deps
+
+      dep_f = dep.to_formula
+      next unless forbidden_licenses.include? dep_f.license
+
+      raise CannotInstallFormulaError, <<~EOS
+        The installation of #{formula.name} has a dependency on #{dep.name} with a forbidden license #{dep_f.license}.
+      EOS
+    end
+    return if @only_deps
+
+    return unless forbidden_licenses.include? formula.license
+
+    raise CannotInstallFormulaError, <<~EOS
+      #{formula.name} has a forbidden license #{formula.license}.
+    EOS
   end
 end

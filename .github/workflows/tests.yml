@@ -62,12 +62,12 @@ jobs:
 
     - name: Run brew doctor
       run: |
+        # minimally fix brew doctor failures (a full clean takes ~5m)
         if [ "$RUNNER_OS" = "Linux" ]; then
-          # Cleanup some Linux `brew doctor` failures
           sudo rm -rf /usr/local/include/node/
         else
-          # Link old gettext (otherwise `brew doctor` is sad)
-          brew link gettext
+          # link old formulae
+          brew link --overwrite --force gettext python@3.8
 
           # remove deleted formula
           brew uninstall --force python@2
@@ -114,6 +114,9 @@ jobs:
     - name: Run brew man
       run: brew man --fail-if-changed
 
+    - name: Check for outdated license data
+      run: brew update-license-data --fail-if-changed
+
     - name: Run brew tests
       run: |
         # brew tests doesn't like world writable directories
@@ -136,8 +139,7 @@ jobs:
         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
         # set variables for coverage reporting
-        HOMEBREW_CI_NAME: github-actions
-        HOMEBREW_COVERALLS_REPO_TOKEN: 3F6U6ZqctoNJwKyREremsqMgpU3qYgxFk
+        HOMEBREW_CODECOV_TOKEN: 3ea0364c-80ce-47a3-9fba-93a940d4b5d7
 
         # These cannot be queried at the macOS level on GitHub Actions.
         HOMEBREW_LANGUAGES: en-GB
