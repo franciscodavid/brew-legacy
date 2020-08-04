@@ -1,7 +1,28 @@
+HOMEBREW_PROCESSOR="$(uname -m)"
+HOMEBREW_SYSTEM="$(uname -s)"
+case "$HOMEBREW_SYSTEM" in
+  Darwin) HOMEBREW_MACOS="1" ;;
+  Linux)  HOMEBREW_LINUX="1" ;;
+esac
+
 # Force UTF-8 to avoid encoding issues for users with broken locale settings.
 if [[ "$(locale charmap 2>/dev/null)" != "UTF-8" ]]
 then
-  export LC_ALL="en_US.UTF-8"
+  if [[ -n "$HOMEBREW_MACOS" ]]
+  then
+    export LC_ALL="en_US.UTF-8"
+  else
+    locales=$(locale -a)
+    c_utf_regex='\bC\.(utf8|UTF-8)\b'
+    en_us_regex='\ben_US\.(utf8|UTF-8)\b'
+    utf_regex='\b[a-z][a-z]_[A-Z][A-Z]\.(utf8|UTF-8)\b'
+    if [[ $locales =~ $c_utf_regex || $locales =~ $en_us_regex || $locales =~ $utf_regex ]]
+    then
+      export LC_ALL=${BASH_REMATCH[0]}
+    else
+      export LC_ALL=C
+    fi
+  fi
 fi
 
 # USER isn't always set so provide a fall back for `brew` and subprocesses.
@@ -86,13 +107,6 @@ then
   # it may work, but I only see pain this route and don't want to support it
   odie "Cowardly refusing to continue at this prefix: $HOMEBREW_PREFIX"
 fi
-
-HOMEBREW_PROCESSOR="$(uname -m)"
-HOMEBREW_SYSTEM="$(uname -s)"
-case "$HOMEBREW_SYSTEM" in
-  Darwin) HOMEBREW_MACOS="1" ;;
-  Linux)  HOMEBREW_LINUX="1" ;;
-esac
 
 if [[ -n "$HOMEBREW_FORCE_BREWED_CURL" &&
       -x "$HOMEBREW_PREFIX/opt/curl/bin/curl" ]] &&
@@ -322,6 +336,8 @@ fi
 
 for arg in "$@"
 do
+  [[ $arg = "--" ]] && break
+
   if [[ $arg = "--help" || $arg = "-h" || $arg = "--usage" || $arg = "-?" ]]
   then
     export HOMEBREW_HELP="1"
@@ -433,8 +449,8 @@ fi
 check-run-command-as-root() {
   [[ "$(id -u)" = 0 ]] || return
 
-  # Allow Azure Pipelines/Docker/Concourse/Kubernetes to do everything as root (as it's normal there)
-  [[ -f /proc/1/cgroup ]] && grep -E "azpl_job|docker|garden|kubepods" -q /proc/1/cgroup && return
+  # Allow Azure Pipelines/GitHub Actions/Docker/Concourse/Kubernetes to do everything as root (as it's normal there)
+  [[ -f /proc/1/cgroup ]] && grep -E "azpl_job|actions_job|docker|garden|kubepods" -q /proc/1/cgroup && return
 
   # Homebrew Services may need `sudo` for system-wide daemons.
   [[ "$HOMEBREW_COMMAND" = "services" ]] && return
@@ -513,6 +529,7 @@ update-preinstall() {
 
   if [[ "$HOMEBREW_COMMAND" = "install" || "$HOMEBREW_COMMAND" = "upgrade" ||
         "$HOMEBREW_COMMAND" = "bump-formula-pr" ||
+        "$HOMEBREW_COMMAND" = "bundle" ||
         "$HOMEBREW_COMMAND" = "tap" && $HOMEBREW_ARG_COUNT -gt 1 ||
         "$HOMEBREW_CASK_COMMAND" = "install" || "$HOMEBREW_CASK_COMMAND" = "upgrade" ]]
   then

@@ -101,6 +101,10 @@ class Formula
   # @private
   attr_reader :tap
 
+  # Whether or not to force the use of a bottle.
+  # @private
+  attr_reader :force_bottle
+
   # The stable (and default) {SoftwareSpec} for this {Formula}
   # This contains all the attributes (e.g. URL, checksum) that apply to the
   # stable version of this formula.
@@ -181,13 +185,15 @@ class Formula
   alias follow_installed_alias? follow_installed_alias
 
   # @private
-  def initialize(name, path, spec, alias_path: nil)
+  def initialize(name, path, spec, alias_path: nil, force_bottle: false)
     @name = name
     @path = path
     @alias_path = alias_path
     @alias_name = (File.basename(alias_path) if alias_path)
     @revision = self.class.revision || 0
     @version_scheme = self.class.version_scheme || 0
+
+    @force_bottle = force_bottle
 
     @tap = if path == Formulary.core_path(name)
       CoreTap.instance
@@ -352,6 +358,8 @@ class Formula
   delegate desc: :"self.class"
 
   # The SPDX ID of the software license.
+  # @method license
+  # @see .license=
   delegate license: :"self.class"
 
   # The homepage for the software.
@@ -941,14 +949,10 @@ class Formula
   end
 
   # @private
-  def plist_manual
-    self.class.plist_manual
-  end
+  delegate plist_manual: :"self.class"
 
   # @private
-  def plist_startup
-    self.class.plist_startup
-  end
+  delegate plist_startup: :"self.class"
 
   # A stable path for this formula, when installed. Contains the formula name
   # but no version number. Only the active version will be linked here if
@@ -1008,9 +1012,7 @@ class Formula
   end
 
   # @private
-  def pour_bottle_check_unsatisfied_reason
-    self.class.pour_bottle_check_unsatisfied_reason
-  end
+  delegate pour_bottle_check_unsatisfied_reason: :"self.class"
 
   # Can be overridden to run commands on both source and bottle installation.
   def post_install; end
@@ -1025,6 +1027,7 @@ class Formula
       TMPDIR:        HOMEBREW_TEMP,
       TEMP:          HOMEBREW_TEMP,
       TMP:           HOMEBREW_TEMP,
+      _JAVA_OPTIONS: "-Djava.io.tmpdir=#{HOMEBREW_TEMP}",
       HOMEBREW_PATH: nil,
       PATH:          ENV["HOMEBREW_PATH"],
     }
@@ -1080,9 +1083,7 @@ class Formula
   end
 
   # @private
-  def keg_only_reason
-    self.class.keg_only_reason
-  end
+  delegate keg_only_reason: :"self.class"
 
   # sometimes the formula cleaner breaks things
   # skip cleaning paths in a formula with a class method like this:
@@ -1139,17 +1140,15 @@ class Formula
 
   # Whether this {Formula} is deprecated (i.e. warns on installation).
   # Defaults to false.
+  # @method deprecated?
   # @return [Boolean]
-  def deprecated?
-    self.class.deprecated?
-  end
+  delegate deprecated?: :"self.class"
 
   # Whether this {Formula} is disabled (i.e. cannot be installed).
   # Defaults to false.
+  # @method disabled?
   # @return [Boolean]
-  def disabled?
-    self.class.disabled?
-  end
+  delegate disabled?: :"self.class"
 
   def skip_cxxstdlib_check?
     false
@@ -1171,11 +1170,11 @@ class Formula
   # yields |self,staging| with current working directory set to the uncompressed tarball
   # where staging is a Mktemp staging context
   # @private
-  def brew(fetch: true)
+  def brew(fetch: true, keep_tmp: false, interactive: false)
     @prefix_returns_versioned_prefix = true
     active_spec.fetch if fetch
-    stage do |staging|
-      staging.retain! if Homebrew.args.keep_tmp?
+    stage(interactive: interactive) do |staging|
+      staging.retain! if keep_tmp
 
       prepare_patches
       fetch_patches if fetch
@@ -1183,7 +1182,7 @@ class Formula
       begin
         yield self, staging
       rescue
-        staging.retain! if Homebrew.args.interactive? || Homebrew.args.debug?
+        staging.retain! if interactive || Homebrew.args.debug?
         raise
       ensure
         cp Dir["config.log", "CMakeCache.txt"], logs
@@ -1226,7 +1225,7 @@ class Formula
   def outdated_kegs(fetch_head: false)
     raise Migrator::MigrationNeededError, self if migration_needed?
 
-    cache_key = "#{name}-#{fetch_head}"
+    cache_key = "#{full_name}-#{fetch_head}"
     Formula.cache[:outdated_kegs] ||= {}
     Formula.cache[:outdated_kegs][cache_key] ||= begin
       all_kegs = []
@@ -1312,29 +1311,19 @@ class Formula
   end
 
   # @private
-  def pinnable?
-    @pin.pinnable?
-  end
+  delegate pinnable?: :@pin
 
   # @private
-  def pinned?
-    @pin.pinned?
-  end
+  delegate pinned?: :@pin
 
   # @private
-  def pinned_version
-    @pin.pinned_version
-  end
+  delegate pinned_version: :@pin
 
   # @private
-  def pin
-    @pin.pin
-  end
+  delegate pin: :@pin
 
   # @private
-  def unpin
-    @pin.unpin
-  end
+  delegate unpin: :@pin
 
   # @private
   def ==(other)
@@ -1472,12 +1461,14 @@ class Formula
   # @private
   def self.each
     files.each do |file|
-      yield Formulary.factory(file)
-    rescue => e
-      # Don't let one broken formula break commands. But do complain.
-      onoe "Failed to import: #{file}"
-      puts e
-      next
+      yield begin
+        Formulary.factory(file)
+      rescue FormulaUnavailableError => e
+        # Don't let one broken formula break commands. But do complain.
+        onoe "Failed to import: #{file}"
+        puts e
+        next
+      end
     end
   end
 
@@ -1589,14 +1580,10 @@ class Formula
   end
 
   # @private
-  def env
-    self.class.env
-  end
+  delegate env: :"self.class"
 
   # @private
-  def conflicts
-    self.class.conflicts
-  end
+  delegate conflicts: :"self.class"
 
   # Returns a list of Dependency objects in an installable order, which
   # means if a depends on b then b will be ordered before a in this list
@@ -1616,7 +1603,7 @@ class Formula
   # @private
   def opt_or_installed_prefix_keg
     Formula.cache[:opt_or_installed_prefix_keg] ||= {}
-    Formula.cache[:opt_or_installed_prefix_keg][name] ||= if optlinked? && opt_prefix.exist?
+    Formula.cache[:opt_or_installed_prefix_keg][full_name] ||= if optlinked? && opt_prefix.exist?
       Keg.new(opt_prefix)
     elsif (latest_installed_prefix = installed_prefixes.last)
       Keg.new(latest_installed_prefix)
@@ -1648,7 +1635,7 @@ class Formula
   # Returns a list of Formula objects that are required at runtime.
   # @private
   def runtime_formula_dependencies(read_from_tab: true, undeclared: true)
-    cache_key = "#{name}-#{read_from_tab}-#{undeclared}"
+    cache_key = "#{full_name}-#{read_from_tab}-#{undeclared}"
 
     Formula.cache[:runtime_formula_dependencies] ||= {}
     Formula.cache[:runtime_formula_dependencies][cache_key] ||= runtime_dependencies(
@@ -1666,10 +1653,10 @@ class Formula
     # that we don't end up with something `Formula#runtime_dependencies` can't
     # read from a `Tab`.
     Formula.cache[:runtime_installed_formula_dependents] = {}
-    Formula.cache[:runtime_installed_formula_dependents][name] ||= Formula.installed
-                                                                          .select(&:opt_or_installed_prefix_keg)
-                                                                          .select(&:runtime_dependencies)
-                                                                          .select do |f|
+    Formula.cache[:runtime_installed_formula_dependents][full_name] ||= Formula.installed
+                                                                               .select(&:opt_or_installed_prefix_keg)
+                                                                               .select(&:runtime_dependencies)
+                                                                               .select do |f|
       f.runtime_formula_dependencies.any? do |dep|
         full_name == dep.full_name
       rescue
@@ -1740,6 +1727,8 @@ class Formula
       "linked_keg"               => linked_version&.to_s,
       "pinned"                   => pinned?,
       "outdated"                 => outdated?,
+      "deprecated"               => deprecated?,
+      "disabled"                 => disabled?,
     }
 
     %w[stable devel].each do |spec_sym|
@@ -1787,10 +1776,9 @@ class Formula
       }
     end
 
-    installed_kegs.each do |keg|
+    hsh["installed"] = installed_kegs.sort_by(&:version).map do |keg|
       tab = Tab.for_keg keg
-
-      hsh["installed"] << {
+      {
         "version"                 => keg.version.to_s,
         "used_options"            => tab.used_options.as_flags,
         "built_as_bottle"         => tab.built_as_bottle,
@@ -1800,8 +1788,6 @@ class Formula
         "installed_on_request"    => tab.installed_on_request,
       }
     end
-
-    hsh["installed"] = hsh["installed"].sort_by { |i| Version.create(i["version"]) }
 
     hsh
   end
@@ -1817,27 +1803,24 @@ class Formula
   end
 
   # @private
-  def run_test
+  def run_test(keep_tmp: false)
     @prefix_returns_versioned_prefix = true
 
     test_env = {
-      CURL_HOME:     ENV["CURL_HOME"] || ENV["HOME"],
       TMPDIR:        HOMEBREW_TEMP,
       TEMP:          HOMEBREW_TEMP,
       TMP:           HOMEBREW_TEMP,
       TERM:          "dumb",
       PATH:          PATH.new(ENV["PATH"], HOMEBREW_PREFIX/"bin"),
       HOMEBREW_PATH: nil,
-      _JAVA_OPTIONS: "#{ENV["_JAVA_OPTIONS"]&.+(" ")}-Duser.home=#{HOMEBREW_CACHE}/java_cache",
-      GOCACHE:       "#{HOMEBREW_CACHE}/go_cache",
-      CARGO_HOME:    "#{HOMEBREW_CACHE}/cargo_cache",
-    }
+    }.merge(common_stage_test_env)
+    test_env[:_JAVA_OPTIONS] += " -Djava.io.tmpdir=#{HOMEBREW_TEMP}"
 
     ENV.clear_sensitive_environment!
     Utils.set_git_name_email!
 
     mktemp("#{name}-test") do |staging|
-      staging.retain! if Homebrew.args.keep_tmp?
+      staging.retain! if keep_tmp
       @testpath = staging.tmpdir
       test_env[:HOME] = @testpath
       setup_home @testpath
@@ -2152,7 +2135,18 @@ class Formula
     exit! 1 # never gets here unless exec threw or failed
   end
 
-  def stage
+  # Common environment variables used at both build and test time
+  def common_stage_test_env
+    {
+      _JAVA_OPTIONS: "-Duser.home=#{HOMEBREW_CACHE}/java_cache",
+      GOCACHE:       "#{HOMEBREW_CACHE}/go_cache",
+      GOPATH:        "#{HOMEBREW_CACHE}/go_mod_cache",
+      CARGO_HOME:    "#{HOMEBREW_CACHE}/cargo_cache",
+      CURL_HOME:     ENV["CURL_HOME"] || ENV["HOME"],
+    }
+  end
+
+  def stage(interactive: false)
     active_spec.stage do |staging|
       @source_modified_time = active_spec.source_modified_time
       @buildpath = Pathname.pwd
@@ -2163,14 +2157,9 @@ class Formula
         HOMEBREW_PATH: nil,
       }
 
-      unless Homebrew.args.interactive?
+      unless interactive
         stage_env[:HOME] = env_home
-        stage_env[:_JAVA_OPTIONS] =
-          "#{ENV["_JAVA_OPTIONS"]&.+(" ")}-Duser.home=#{HOMEBREW_CACHE}/java_cache"
-        stage_env[:GOCACHE] = "#{HOMEBREW_CACHE}/go_cache"
-        stage_env[:GOPATH] = "#{HOMEBREW_CACHE}/go_mod_cache"
-        stage_env[:CARGO_HOME] = "#{HOMEBREW_CACHE}/cargo_cache"
-        stage_env[:CURL_HOME] = ENV["CURL_HOME"] || ENV["HOME"]
+        stage_env.merge!(common_stage_test_env)
       end
 
       setup_home env_home
@@ -2229,9 +2218,16 @@ class Formula
     # @!attribute [w]
     # The SPDX ID of the open-source license that the formula uses.
     # Shows when running `brew info`.
-    #
+    # Multiple licenses means that the software is licensed under multiple licenses.
+    # Do not use multiple licenses if e.g. different parts are under different licenses.
     # <pre>license "BSD-2-Clause"</pre>
-    attr_rw :license
+    def license(args = nil)
+      if args.nil?
+        @licenses
+      else
+        @licenses = Array(args)
+      end
+    end
 
     # @!attribute [w] homepage
     # The homepage for the software. Used by users to get more information
@@ -2386,6 +2382,16 @@ class Formula
       stable.build
     end
 
+    # Get the `BUILD_FLAGS` from the formula's namespace set in `Formulary::load_formula`.
+    # @private
+    def build_flags
+      namespace = to_s.split("::")[0..-2].join("::")
+      return [] if namespace.empty?
+
+      mod = const_get(namespace)
+      mod.const_get(:BUILD_FLAGS)
+    end
+
     # @!attribute [w] stable
     # Allows adding {.depends_on} and {Patch}es just to the {.stable} {SoftwareSpec}.
     # This is required instead of using a conditional.
@@ -2399,7 +2405,7 @@ class Formula
     #   depends_on "libffi"
     # end</pre>
     def stable(&block)
-      @stable ||= SoftwareSpec.new
+      @stable ||= SoftwareSpec.new(flags: build_flags)
       return @stable unless block_given?
 
       @stable.instance_eval(&block)
@@ -2419,7 +2425,7 @@ class Formula
     # end</pre>
     # @private
     def devel(&block)
-      @devel ||= SoftwareSpec.new
+      @devel ||= SoftwareSpec.new(flags: build_flags)
       return @devel unless block_given?
 
       odeprecated "'devel' blocks in formulae", "'head' blocks or @-versioned formulae"
@@ -2439,7 +2445,7 @@ class Formula
     # or (if autodetect fails):
     # <pre>head "https://hg.is.awesome.but.git.has.won.example.com/", :using => :hg</pre>
     def head(val = nil, specs = {}, &block)
-      @head ||= HeadSoftwareSpec.new
+      @head ||= HeadSoftwareSpec.new(flags: build_flags)
       if block_given?
         @head.instance_eval(&block)
       elsif val
@@ -2778,6 +2784,15 @@ class Formula
     # @private
     def link_overwrite_paths
       @link_overwrite_paths ||= Set.new
+    end
+
+    def ignore_missing_libraries(*)
+      raise FormulaSpecificationError, "#{__method__} is available on Linux only"
+    end
+
+    # @private
+    def allowed_missing_libraries
+      @allowed_missing_libraries ||= Set.new
     end
   end
 end

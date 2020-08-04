@@ -86,12 +86,14 @@ module Homebrew
 
       let(:custom_spdx_id) { "zzz" }
       let(:standard_mismatch_spdx_id) { "0BSD" }
+      let(:license_array) { ["0BSD", "GPL-3.0"] }
+      let(:license_array_mismatch) { ["0BSD", "MIT"] }
+      let(:license_array_nonstandard) { ["0BSD", "zzz", "MIT"] }
 
       it "does not check if the formula is not a new formula" do
         fa = formula_auditor "foo", <<~RUBY, spdx_data: spdx_data, new_formula: false
           class Foo < Formula
             url "https://brew.sh/foo-1.0.tgz"
-            license ""
           end
         RUBY
 
@@ -103,7 +105,6 @@ module Homebrew
         fa = formula_auditor "foo", <<~RUBY, spdx_data: spdx_data, new_formula: true
           class Foo < Formula
             url "https://brew.sh/foo-1.0.tgz"
-            license ""
           end
         RUBY
 
@@ -120,7 +121,19 @@ module Homebrew
         RUBY
 
         fa.audit_license
-        expect(fa.problems.first).to match "#{custom_spdx_id} is not a standard SPDX license."
+        expect(fa.problems.first).to match "Formula foo contains non-standard SPDX licenses: [\"zzz\"]."
+      end
+
+      it "detects if license array contains a non-standard spdx-id" do
+        fa = formula_auditor "foo", <<~RUBY, spdx_data: spdx_data, new_formula: true
+          class Foo < Formula
+            url "https://brew.sh/foo-1.0.tgz"
+            license #{license_array_nonstandard}
+          end
+        RUBY
+
+        fa.audit_license
+        expect(fa.problems.first).to match "Formula foo contains non-standard SPDX licenses: [\"zzz\"]."
       end
 
       it "verifies that a license info is a standard spdx id" do
@@ -128,6 +141,18 @@ module Homebrew
           class Foo < Formula
             url "https://brew.sh/foo-1.0.tgz"
             license "0BSD"
+          end
+        RUBY
+
+        fa.audit_license
+        expect(fa.problems).to be_empty
+      end
+
+      it "verifies that a license array contains only standard spdx id" do
+        fa = formula_auditor "foo", <<~RUBY, spdx_data: spdx_data, new_formula: true
+          class Foo < Formula
+            url "https://brew.sh/foo-1.0.tgz"
+            license #{license_array}
           end
         RUBY
 
@@ -160,8 +185,37 @@ module Homebrew
         RUBY
 
         fa.audit_license
-        expect(fa.problems.first).to match "License mismatch - GitHub license is: GPL-3.0, "\
-        "but Formulae license states: #{standard_mismatch_spdx_id}."
+        expect(fa.problems.first).to match "License mismatch - GitHub license is: [\"GPL-3.0\"], "\
+        "but Formulae license states: #{Array(standard_mismatch_spdx_id)}."
+      end
+
+      it "checks online and detects that an array of license does not contain "\
+        "what is indicated on its Github repository" do
+        fa = formula_auditor "cask", <<~RUBY, online: true, spdx_data: spdx_data, core_tap: true, new_formula: true
+          class Cask < Formula
+            url "https://github.com/cask/cask/archive/v0.8.4.tar.gz"
+            head "https://github.com/cask/cask.git"
+            license #{license_array_mismatch}
+          end
+        RUBY
+
+        fa.audit_license
+        expect(fa.problems.first).to match "License mismatch - GitHub license is: [\"GPL-3.0\"], "\
+        "but Formulae license states: #{Array(license_array_mismatch)}."
+      end
+
+      it "checks online and verifies that an array of license contains "\
+        "what is indicated on its Github repository" do
+        fa = formula_auditor "cask", <<~RUBY, online: true, spdx_data: spdx_data, core_tap: true, new_formula: true
+          class Cask < Formula
+            url "https://github.com/cask/cask/archive/v0.8.4.tar.gz"
+            head "https://github.com/cask/cask.git"
+            license #{license_array}
+          end
+        RUBY
+
+        fa.audit_license
+        expect(fa.problems).to be_empty
       end
     end
 
@@ -195,6 +249,20 @@ module Homebrew
       end
     end
 
+    describe "#audit_github_repository_archived" do
+      specify "#audit_github_repository_archived when HOMEBREW_NO_GITHUB_API is set" do
+        fa = formula_auditor "foo", <<~RUBY, strict: true, online: true
+          class Foo < Formula
+            homepage "https://github.com/example/example"
+            url "https://brew.sh/foo-1.0.tgz"
+          end
+        RUBY
+
+        fa.audit_github_repository_archived
+        expect(fa.problems).to eq([])
+      end
+    end
+
     describe "#audit_gitlab_repository" do
       specify "#audit_gitlab_repository for stars, forks and creation date" do
         fa = formula_auditor "foo", <<~RUBY, strict: true, online: true
@@ -205,6 +273,20 @@ module Homebrew
         RUBY
 
         fa.audit_gitlab_repository
+        expect(fa.problems).to eq([])
+      end
+    end
+
+    describe "#audit_gitlab_repository_archived" do
+      specify "#audit gitlab repository for archived status" do
+        fa = formula_auditor "foo", <<~RUBY, strict: true, online: true
+          class Foo < Formula
+            homepage "https://gitlab.com/libtiff/libtiff"
+            url "https://brew.sh/foo-1.0.tgz"
+          end
+        RUBY
+
+        fa.audit_gitlab_repository_archived
         expect(fa.problems).to eq([])
       end
     end
@@ -261,7 +343,7 @@ module Homebrew
           subject { fa }
 
           let(:fa) do
-            formula_auditor "foo", <<~RUBY, new_formula: true
+            formula_auditor "foo", <<~RUBY, new_formula: true, core_tap: true
               class Foo < Formula
                 url "https://brew.sh/foo-1.0.tgz"
                 homepage "https://brew.sh"
@@ -541,7 +623,7 @@ module Homebrew
 
     include_examples "formulae exist", described_class::VERSIONED_KEG_ONLY_ALLOWLIST
     include_examples "formulae exist", described_class::VERSIONED_HEAD_SPEC_ALLOWLIST
-    include_examples "formulae exist", described_class::USES_FROM_MACOS_ALLOWLIST
+    include_examples "formulae exist", described_class::PROVIDED_BY_MACOS_DEPENDS_ON_ALLOWLIST
     include_examples "formulae exist", described_class::THROTTLED_FORMULAE.keys
     include_examples "formulae exist", described_class::UNSTABLE_ALLOWLIST.keys
     include_examples "formulae exist", described_class::GNOME_DEVEL_ALLOWLIST.keys
