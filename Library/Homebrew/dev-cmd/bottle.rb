@@ -88,7 +88,7 @@ module Homebrew
     return merge(args: args) if args.merge?
 
     ensure_relocation_formulae_installed! unless args.skip_relocation?
-    args.resolved_formulae.each do |f|
+    args.named.to_resolved_formulae.each do |f|
       bottle_formula f, args: args
     end
   end
@@ -544,13 +544,13 @@ module Homebrew
                 )\n+                                                              # multiple empty lines
                )+
              /mx
-            string = s.sub!(pattern, '\0' + output + "\n")
+            string = s.sub!(pattern, "\\0#{output}\n")
             odie "Bottle block addition failed!" unless string
           end
         end
 
         unless args.no_commit?
-          Utils.set_git_name_email!
+          Utils::Git.set_name_email!
 
           short_name = formula_name.split("/", -1).last
           pkg_version = bottle_hash["formula"]["pkg_version"]

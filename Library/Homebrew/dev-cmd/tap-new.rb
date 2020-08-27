@@ -50,36 +50,38 @@ module Homebrew
       on:
         push:
           branches: master
-        pull_request: []
+        pull_request:
       jobs:
         test-bot:
-          runs-on: [ubuntu-latest, macos-latest]
+          runs-on: ${{ matrix.os }}
+          strategy:
+            matrix:
+              os: [ubuntu-latest, macOS-latest]
           steps:
-            - name: Update Homebrew
-              run: brew update
-
-            - name: Set up Git repository
-              uses: actions/checkout@v2
-
             - name: Set up Homebrew
-              run: |
-                HOMEBREW_TAP_DIR="/usr/local/Homebrew/Library/Taps/#{tap.full_name}"
-                mkdir -p "$HOMEBREW_TAP_DIR"
-                rm -rf "$HOMEBREW_TAP_DIR"
-                ln -s "$PWD" "$HOMEBREW_TAP_DIR"
+              id: set-up-homebrew
+              uses: Homebrew/actions/setup-homebrew@master
 
-            - name: Run brew test-bot --only-cleanup-before
-              run: brew test-bot --only-cleanup-before
+            - name: Cache Homebrew Bundler RubyGems
+              id: cache
+              uses: actions/cache@v1
+              with:
+                path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+                key: ${{ runner.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+                restore-keys: ${{ runner.os }}-rubygems-
 
-            - name: Run brew test-bot --only-setup
-              run: brew test-bot --only-setup
+            - name: Install Homebrew Bundler RubyGems
+              if: steps.cache.outputs.cache-hit != 'true'
+              run: brew install-bundler-gems
 
-            - name: Run brew test-bot --only-tap-syntax
-              run: brew test-bot --only-tap-syntax
+            - run: brew test-bot --only-cleanup-before
 
-            - name: Run brew test-bot --only-formulae
+            - run: brew test-bot --only-setup
+
+            - run: brew test-bot --only-tap-syntax
+
+            - run: brew test-bot --only-formulae
               if: github.event_name == 'pull_request'
-              run: brew test-bot --only-formulae
     YAML
 
     (tap.path/".github/workflows").mkpath

@@ -50,7 +50,7 @@ module Homebrew
     args = pull_args.parse
 
     # Passthrough Git environment variables for e.g. git am
-    Utils.set_git_name_email!(author: false, committer: true)
+    Utils::Git.set_name_email!(author: false, committer: true)
 
     # Depending on user configuration, git may try to invoke gpg.
     if Utils.popen_read("git config --get --bool commit.gpgsign").chomp == "true"
@@ -205,7 +205,7 @@ module Homebrew
     def initialize(url, args, description = nil)
       @base_url = url
       # GitHub provides commits/pull-requests raw patches using this URL.
-      @patch_url = url + ".patch"
+      @patch_url = "#{url}.patch"
       @patchpath = HOMEBREW_CACHE + File.basename(patch_url)
       @description = description
       @args = args

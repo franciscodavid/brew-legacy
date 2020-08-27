@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 module Homebrew
+  # Helper module for running RuboCop.
+  #
+  # @api private
   module Style
     module_function
 
@@ -16,7 +19,9 @@ module Homebrew
       check_style_impl(files, :json, **options)
     end
 
-    def check_style_impl(files, output_type, fix: false, except_cops: nil, only_cops: nil, display_cop_names: false)
+    def check_style_impl(files, output_type,
+                         fix: false, except_cops: nil, only_cops: nil, display_cop_names: false,
+                         debug: false, verbose: false)
       Homebrew.install_bundler_gems!
       require "rubocop"
       require "rubocops"
@@ -30,7 +35,8 @@ module Homebrew
         "--parallel"
       end
 
-      args += ["--extra-details", "--display-cop-names"] if Homebrew.args.verbose?
+      args += ["--extra-details"] if verbose
+      args += ["--display-cop-names"] if display_cop_names || verbose
 
       if except_cops
         except_cops.map! { |cop| RuboCop::Cop::Cop.registry.qualified_cop_name(cop.to_s, "") }
@@ -77,15 +83,13 @@ module Homebrew
 
       case output_type
       when :print
-        args << "--debug" if Homebrew.args.debug?
-        args << "--display-cop-names" if display_cop_names
+        args << "--debug" if debug
         args << "--format" << "simple" if files.present?
         system(cache_env, "rubocop", *args)
         rubocop_success = $CHILD_STATUS.success?
       when :json
         json, err, status =
-          Open3.capture3(cache_env, "rubocop",
-                         "--format", "json", *args)
+          Open3.capture3(cache_env, "rubocop", "--format", "json", *args)
         # exit status of 1 just means violations were found; other numbers mean
         # execution errors.
         # exitstatus can also be nil if RuboCop process crashes, e.g. due to
@@ -126,6 +130,7 @@ module Homebrew
       rubocop_success && shellcheck_success
     end
 
+    # Result of a RuboCop run.
     class RubocopResults
       def initialize(json)
         @metadata = json["metadata"]
@@ -143,6 +148,7 @@ module Homebrew
       end
     end
 
+    # A RuboCop offense.
     class RubocopOffense
       attr_reader :severity, :message, :corrected, :location, :cop_name
 
@@ -176,6 +182,7 @@ module Homebrew
       end
     end
 
+    # Source location of a RuboCop offense.
     class RubocopLineLocation
       attr_reader :line, :column, :length
 

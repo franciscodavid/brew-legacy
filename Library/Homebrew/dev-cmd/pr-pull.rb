@@ -5,6 +5,7 @@ require "cli/parser"
 require "utils/github"
 require "tmpdir"
 require "bintray"
+require "formula"
 
 module Homebrew
   module_function
@@ -28,6 +29,9 @@ module Homebrew
              description: "Print what would be done rather than doing it."
       switch "--clean",
              description: "Do not amend the commits from pull requests."
+      switch "--keep-old",
+             description: "If the formula specifies a rebuild version, " \
+                          "attempt to preserve its value in the generated DSL."
       switch "--branch-okay",
              description: "Do not warn if pulling to a branch besides master (useful for testing)."
       switch "--resolve",
@@ -116,7 +120,7 @@ module Homebrew
       # git cherry-pick unfortunately has no quiet option
       ohai "Cherry-picking #{commit_count} commit#{"s" unless commit_count == 1} from ##{pr}"
       cherry_pick_args = "git", "-C", path, "cherry-pick", "--ff", "--allow-empty", "#{merge_base}..FETCH_HEAD"
-      result = Homebrew.args.verbose? ? system(*cherry_pick_args) : quiet_system(*cherry_pick_args)
+      result = args.verbose? ? system(*cherry_pick_args) : quiet_system(*cherry_pick_args)
 
       unless result
         if args.resolve?
@@ -174,16 +178,12 @@ module Homebrew
     Utils.popen_read("git", "-C", tap.path, "diff-tree",
                      "-r", "--name-only", "--diff-filter=AM",
                      original_commit, "HEAD", "--", tap.formula_dir)
-         .lines.map do |line|
+         .lines
+         .map do |line|
       next unless line.end_with? ".rb\n"
 
       name = "#{tap.name}/#{File.basename(line.chomp, ".rb")}"
-      begin
-        Formula[name]
-      rescue Exception # rubocop:disable Lint/RescueException
-        # Make sure we catch syntax errors.
-        next
-      end
+      Formula[name]
     end.compact
   end
 
@@ -262,8 +262,9 @@ module Homebrew
           upload_args << "--verbose" if args.verbose?
           upload_args << "--no-publish" if args.no_publish?
           upload_args << "--dry-run" if args.dry_run?
+          upload_args << "--keep-old" if args.keep_old?
           upload_args << "--warn-on-upload-failure" if args.warn_on_upload_failure?
-          upload_args << "--root_url=#{args.root_url}" if args.root_url
+          upload_args << "--root-url=#{args.root_url}" if args.root_url
           upload_args << "--bintray-org=#{bintray_org}"
           safe_system HOMEBREW_BREW_FILE, *upload_args
         end

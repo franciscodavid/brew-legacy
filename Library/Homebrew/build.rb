@@ -15,6 +15,9 @@ require "fcntl"
 require "socket"
 require "cmd/install"
 
+# A formula build.
+#
+# @api private
 class Build
   attr_reader :formula, :deps, :reqs, :args
 
@@ -139,7 +142,11 @@ class Build
 
       formula.update_head_version
 
-      formula.brew(fetch: false, keep_tmp: args.keep_tmp?, interactive: args.interactive?) do |_formula, _staging|
+      formula.brew(
+        fetch:       false,
+        keep_tmp:    args.keep_tmp?,
+        interactive: args.interactive?,
+      ) do
         # For head builds, HOMEBREW_FORMULA_PREFIX should include the commit,
         # which is not known until after the formula has been staged.
         ENV["HOMEBREW_FORMULA_PREFIX"] = formula.prefix
@@ -201,23 +208,22 @@ class Build
     else
       raise
     end
-    Keg.new(path).optlink
+    Keg.new(path).optlink(verbose: args.verbose?)
   rescue
     raise "#{f.opt_prefix} not present or broken\nPlease reinstall #{f.full_name}. Sorry :("
   end
 end
 
 begin
-  Homebrew.args = Homebrew::CLI::Parser.new.parse(ARGV.dup.freeze, ignore_invalid_options: true)
-
   args = Homebrew.install_args.parse
+  Context.current = args.context
 
   error_pipe = UNIXSocket.open(ENV["HOMEBREW_ERROR_PIPE"], &:recv_io)
   error_pipe.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
 
   trap("INT", old_trap)
 
-  formula = args.formulae.first
+  formula = args.named.to_formulae.first
   options = Options.create(args.flags_only)
   build   = Build.new(formula, options, args: args)
   build.install

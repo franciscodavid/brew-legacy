@@ -21,8 +21,12 @@ require "cask/dsl/uninstall_preflight"
 require "cask/dsl/version"
 
 require "cask/url"
+require "cask/utils"
 
 module Cask
+  # Class representing the domain-specific language used for casks.
+  #
+  # @api private
   class DSL
     ORDINARY_ARTIFACT_CLASSES = [
       Artifact::Installer,
@@ -64,6 +68,7 @@ module Cask
                             :caveats,
                             :conflicts_with,
                             :container,
+                            :desc,
                             :depends_on,
                             :homepage,
                             :language,
@@ -91,6 +96,10 @@ module Cask
       return @name if args.empty?
 
       @name.concat(args.flatten)
+    end
+
+    def desc(description = nil)
+      set_unique_stanza(:desc, description.nil?) { description }
     end
 
     def set_unique_stanza(stanza, should_return)
@@ -131,7 +140,7 @@ module Cask
     end
 
     def language_eval
-      return @language if instance_variable_defined?(:@language)
+      return @language if defined?(@language)
 
       return @language = nil if @language_blocks.nil? || @language_blocks.empty?
 
@@ -276,6 +285,10 @@ module Cask
       end
     end
 
+    def respond_to_missing?(*)
+      super
+    end
+
     def method_missing(method, *)
       if method
         Utils.method_missing_message(method, token)
@@ -283,10 +296,6 @@ module Cask
       else
         super
       end
-    end
-
-    def respond_to_missing?(*)
-      true
     end
 
     def appdir

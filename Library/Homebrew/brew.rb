@@ -1,5 +1,12 @@
 # frozen_string_literal: true
 
+if ENV["HOMEBREW_STACKPROF"]
+  require_relative "utils/gems"
+  Homebrew.setup_gem_environment!
+  require "stackprof"
+  StackProf.start(mode: :wall, raw: true)
+end
+
 raise "HOMEBREW_BREW_FILE was not exported! Please call bin/brew directly!" unless ENV["HOMEBREW_BREW_FILE"]
 
 std_trap = trap("INT") { exit! 130 } # no backtrace thanks
@@ -8,12 +15,6 @@ std_trap = trap("INT") { exit! 130 } # no backtrace thanks
 RUBY_X, RUBY_Y, = RUBY_VERSION.split(".").map(&:to_i)
 if RUBY_X < 2 || (RUBY_X == 2 && RUBY_Y < 6)
   raise "Homebrew must be run under Ruby 2.6! You're running #{RUBY_VERSION}."
-end
-
-# Load Bundler first of all if it's needed to avoid Gem version conflicts.
-if ENV["HOMEBREW_INSTALL_BUNDLER_GEMS_FIRST"]
-  require_relative "utils/gems"
-  Homebrew.install_bundler_gems!
 end
 
 # Also define here so we can rescue regardless of location.
@@ -59,7 +60,9 @@ begin
 
   ARGV.delete_at(help_cmd_index) if help_cmd_index
 
-  Homebrew.args = Homebrew::CLI::Parser.new.parse(ARGV.dup.freeze, ignore_invalid_options: true)
+  args = Homebrew::CLI::Parser.new.parse(ARGV.dup.freeze, ignore_invalid_options: true)
+  Homebrew.args = args
+  Context.current = args.context
 
   path = PATH.new(ENV["PATH"])
   homebrew_path = PATH.new(ENV["HOMEBREW_PATH"])
@@ -102,8 +105,8 @@ begin
   # - if cmd is Cask, let Cask handle the help command instead
   if (empty_argv || help_flag) && cmd != "cask"
     require "help"
-    Homebrew::Help.help cmd, empty_argv: empty_argv
-    # `Homebrew.help` never returns, except for unknown commands.
+    Homebrew::Help.help cmd, remaining_args: args.remaining, empty_argv: empty_argv
+    # `Homebrew::Help.help` never returns, except for unknown commands.
   end
 
   if internal_cmd || Commands.external_ruby_v2_cmd_path(cmd)
@@ -138,17 +141,17 @@ begin
   end
 rescue UsageError => e
   require "help"
-  Homebrew::Help.help cmd, usage_error: e.message
+  Homebrew::Help.help cmd, remaining_args: args.remaining, usage_error: e.message
 rescue SystemExit => e
-  onoe "Kernel.exit" if Homebrew.args.debug? && !e.success?
-  $stderr.puts e.backtrace if Homebrew.args.debug?
+  onoe "Kernel.exit" if args.debug? && !e.success?
+  $stderr.puts e.backtrace if args.debug?
   raise
 rescue Interrupt
   $stderr.puts # seemingly a newline is typical
   exit 130
 rescue BuildError => e
   Utils::Analytics.report_build_error(e)
-  e.dump
+  e.dump(verbose: args.verbose?)
 
   if e.formula.head? || e.formula.deprecated? || e.formula.disabled?
     $stderr.puts <<~EOS
@@ -162,7 +165,7 @@ rescue RuntimeError, SystemCallError => e
   raise if e.message.empty?
 
   onoe e
-  $stderr.puts e.backtrace if Homebrew.args.debug?
+  $stderr.puts e.backtrace if args.debug?
 
   exit 1
 rescue MethodDeprecatedError => e
@@ -171,7 +174,7 @@ rescue MethodDeprecatedError => e
     $stderr.puts "If reporting this issue please do so at (not Homebrew/brew or Homebrew/core):"
     $stderr.puts "  #{Formatter.url(e.issues_url)}"
   end
-  $stderr.puts e.backtrace if Homebrew.args.debug?
+  $stderr.puts e.backtrace if args.debug?
   exit 1
 rescue Exception => e # rubocop:disable Lint/RescueException
   onoe e
@@ -184,4 +187,9 @@ rescue Exception => e # rubocop:disable Lint/RescueException
   exit 1
 else
   exit 1 if Homebrew.failed?
+ensure
+  if ENV["HOMEBREW_STACKPROF"]
+    StackProf.stop
+    StackProf.results("prof/stackprof.dump")
+  end
 end

@@ -36,6 +36,7 @@ $LOAD_PATH.push(File.expand_path("#{ENV["HOMEBREW_LIBRARY"]}/Homebrew/test/suppo
 require_relative "../global"
 
 require "test/support/no_seed_progress_formatter"
+require "test/support/helper/cask"
 require "test/support/helper/fixtures"
 require "test/support/helper/formula"
 require "test/support/helper/mktmpdir"
@@ -86,6 +87,7 @@ RSpec.configure do |config|
 
   config.include(RuboCop::RSpec::ExpectOffense)
 
+  config.include(Test::Helper::Cask)
   config.include(Test::Helper::Fixtures)
   config.include(Test::Helper::Formula)
   config.include(Test::Helper::MkTmpDir)
@@ -93,10 +95,6 @@ RSpec.configure do |config|
 
   config.before(:each, :needs_compat) do
     skip "Requires compatibility layer." if ENV["HOMEBREW_NO_COMPAT"]
-  end
-
-  config.before(:each, :needs_official_cmd_taps) do
-    skip "Needs official command Taps." unless ENV["HOMEBREW_TEST_OFFICIAL_CMD_TAPS"]
   end
 
   config.before(:each, :needs_linux) do
@@ -183,7 +181,7 @@ RSpec.configure do |config|
       end
 
       begin
-        timeout = example.metadata.fetch(:timeout, 60)
+        timeout = example.metadata.fetch(:timeout, 120)
         inner_timeout = nil
         Timeout.timeout(timeout) do
           example.run

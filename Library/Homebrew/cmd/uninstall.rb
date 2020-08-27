@@ -5,7 +5,6 @@ require "formula"
 require "diagnostic"
 require "migrator"
 require "cli/parser"
-require "cask/all"
 require "cask/cmd"
 require "cask/cask_loader"
 
@@ -50,7 +49,7 @@ module Homebrew
         end
       end
     else
-      all_kegs, casks = args.kegs_casks
+      all_kegs, casks = args.named.to_kegs_to_casks
       kegs_by_rack = all_kegs.group_by(&:rack)
     end
 
@@ -127,10 +126,12 @@ module Homebrew
 
     return if casks.blank?
 
-    cask_uninstall = Cask::Cmd::Uninstall.new(casks)
-    cask_uninstall.force = args.force?
-    cask_uninstall.verbose = args.verbose?
-    cask_uninstall.run
+    Cask::Cmd::Uninstall.uninstall_casks(
+      *casks,
+      binaries: EnvConfig.cask_opts_binaries?,
+      verbose:  args.verbose?,
+      force:    args.force?,
+    )
   rescue MultipleVersionsInstalledError => e
     ofail e
     puts "Run `brew uninstall --force #{e.name}` to remove all versions."

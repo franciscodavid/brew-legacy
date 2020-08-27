@@ -8,6 +8,7 @@ require "formula"
 require "keg"
 require "tab"
 require "json"
+require "utils/spdx"
 
 module Homebrew
   module_function
@@ -87,7 +88,7 @@ module Homebrew
     elsif args.github?
       raise FormulaUnspecifiedError if args.no_named?
 
-      exec_browser(*args.formulae.map { |f| github_info(f) })
+      exec_browser(*args.named.to_formulae.map { |f| github_info(f) })
     else
       print_info(args: args)
     end
@@ -132,7 +133,7 @@ module Homebrew
     elsif args.installed?
       Formula.installed.sort
     else
-      args.formulae
+      args.named.to_formulae
     end
     json = ff.map(&:to_hash)
     puts JSON.generate(json)
@@ -211,13 +212,7 @@ module Homebrew
 
     puts "From: #{Formatter.url(github_info(f))}"
 
-    if f.license.present?
-      licenses = f.license
-                  .map(&:to_s)
-                  .join(", ")
-                  .sub("public_domain", "Public Domain")
-      puts "License: #{licenses}"
-    end
+    puts "License: #{SPDX.license_expression_to_string f.license}" if f.license.present?
 
     unless f.deps.empty?
       ohai "Dependencies"
@@ -239,7 +234,7 @@ module Homebrew
 
     if !f.options.empty? || f.head || f.devel
       ohai "Options"
-      Homebrew.dump_options_for_formula f
+      Options.dump_for_formula f
     end
 
     caveats = Caveats.new(f)

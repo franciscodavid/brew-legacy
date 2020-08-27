@@ -2,10 +2,12 @@
 
 require "digest/md5"
 require "extend/cachable"
+require "tab"
 
 # The Formulary is responsible for creating instances of {Formula}.
 # It is not meant to be used directly from formulae.
-
+#
+# @api private
 module Formulary
   extend Cachable
 
@@ -29,6 +31,8 @@ module Formulary
 
   def self.load_formula(name, path, contents, namespace, flags:)
     raise "Formula loading disabled by HOMEBREW_DISABLE_LOAD_FORMULA!" if Homebrew::EnvConfig.disable_load_formula?
+
+    require "formula"
 
     mod = Module.new
     const_set(namespace, mod)
@@ -109,6 +113,8 @@ module Formulary
   # A FormulaLoader returns instances of formulae.
   # Subclasses implement loaders for particular sources of formulae.
   class FormulaLoader
+    include Context
+
     # The formula's name
     attr_reader :name
     # The formula's ruby file's path or filename
@@ -138,14 +144,14 @@ module Formulary
     private
 
     def load_file(flags:)
-      $stderr.puts "#{$PROGRAM_NAME} (#{self.class.name}): loading #{path}" if Homebrew.args.debug?
+      $stderr.puts "#{$PROGRAM_NAME} (#{self.class.name}): loading #{path}" if debug?
       raise FormulaUnavailableError, name unless path.file?
 
       Formulary.load_formula_from_path(name, path, flags: flags)
     end
   end
 
-  # Loads formulae from bottles.
+  # Loads a formula from a bottle.
   class BottleLoader < FormulaLoader
     def initialize(bottle_name)
       case bottle_name
@@ -182,6 +188,7 @@ module Formulary
     end
   end
 
+  # Loads a formula from a path to an alias.
   class AliasLoader < FormulaLoader
     def initialize(alias_path)
       path = alias_path.resolved_path
@@ -293,6 +300,7 @@ module Formulary
     end
   end
 
+  # Pseudo-loader which will raise a `FormulaUnavailableError` when trying to load the corresponding formula.
   class NullLoader < FormulaLoader
     def initialize(name)
       super name, Formulary.core_path(name)
@@ -314,7 +322,7 @@ module Formulary
     end
 
     def klass(flags:)
-      $stderr.puts "#{$PROGRAM_NAME} (#{self.class.name}): loading #{path}" if Homebrew.args.debug?
+      $stderr.puts "#{$PROGRAM_NAME} (#{self.class.name}): loading #{path}" if debug?
       namespace = "FormulaNamespace#{Digest::MD5.hexdigest(contents.to_s)}"
       Formulary.load_formula(name, path, contents, namespace, flags: flags)
     end

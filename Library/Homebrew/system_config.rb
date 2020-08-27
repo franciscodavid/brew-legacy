@@ -2,11 +2,13 @@
 
 require "hardware"
 require "software_spec"
-require "rexml/document"
 require "development_tools"
 require "extend/ENV"
 
-class SystemConfig
+# Helper module for querying information about the system configuration.
+#
+# @api private
+module SystemConfig
   class << self
     def clang
       @clang ||= if DevelopmentTools.installed?
@@ -96,9 +98,9 @@ class SystemConfig
     end
 
     def describe_git
-      return "N/A" unless Utils.git_available?
+      return "N/A" unless Utils::Git.available?
 
-      "#{Utils.git_version} => #{Utils.git_path}"
+      "#{Utils::Git.version} => #{Utils::Git.path}"
     end
 
     def describe_curl

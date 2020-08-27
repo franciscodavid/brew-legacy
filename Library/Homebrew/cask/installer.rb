@@ -13,6 +13,9 @@ require "cask/quarantine"
 require "cgi"
 
 module Cask
+  # Installer for a {Cask}.
+  #
+  # @api private
   class Installer
     extend Predicable
     # TODO: it is unwise for Cask::Staged to be a module, when we are
@@ -367,11 +370,10 @@ module Cask
             force:                   false,
           ).install
         else
-          FormulaInstaller.new(cask_or_formula).yield_self do |fi|
+          FormulaInstaller.new(cask_or_formula, verbose: verbose?).yield_self do |fi|
             fi.installed_as_dependency = true
             fi.installed_on_request = false
             fi.show_header = true
-            fi.verbose = verbose?
             fi.prelude
             fi.fetch
             fi.install

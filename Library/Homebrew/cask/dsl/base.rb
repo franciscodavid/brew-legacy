@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
+require "cask/utils"
+
 module Cask
   class DSL
+    # Superclass for all stanzas which take a block.
+    #
+    # @api private
     class Base
       extend Forwardable
 
@@ -16,6 +21,10 @@ module Cask
         @command.run!(executable, **options)
       end
 
+      def respond_to_missing?(*)
+        super
+      end
+
       def method_missing(method, *)
         if method
           underscored_class = self.class.name.gsub(/([[:lower:]])([[:upper:]][[:lower:]])/, '\1_\2').downcase
@@ -25,10 +34,6 @@ module Cask
         else
           super
         end
-      end
-
-      def respond_to_missing?(*)
-        true
       end
     end
   end

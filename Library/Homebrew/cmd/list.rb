@@ -11,9 +11,9 @@ module Homebrew
   def list_args
     Homebrew::CLI::Parser.new do
       usage_banner <<~EOS
-        `list`, `ls` [<options>] [<formula>]
+        `list`, `ls` [<options>] [<formula|cask>]
 
-        List all installed formulae.
+        List all installed formulae or casks
 
         If <formula> is provided, summarise the paths within its current keg.
       EOS
@@ -32,8 +32,10 @@ module Homebrew
       switch "--pinned",
              description: "Show the versions of pinned formulae, or only the specified (pinned) "\
                           "formulae if <formula> are provided. See also `pin`, `unpin`."
-      switch "--cask",
-             description: "List casks"
+      switch "--formula", "--formulae",
+             description: "List only formulae."
+      switch "--cask", "--casks",
+             description: "List only casks."
       # passed through to ls
       switch "-1",
              description: "Force output to be one entry per line. " \
@@ -46,7 +48,9 @@ module Homebrew
       switch "-t",
              description: "Sort by time modified, listing most recently modified first."
 
-      ["--unbrewed", "--multiple", "--pinned", "-l", "-r", "-t"].each { |flag| conflicts "--cask", flag }
+      ["--formula", "--unbrewed", "--multiple", "--pinned", "-l", "-r", "-t"].each do |flag|
+        conflicts "--cask", flag
+      end
     end
   end
 
@@ -85,9 +89,9 @@ module Homebrew
         safe_system "ls", *ls_args, HOMEBREW_CELLAR
       end
     elsif args.verbose? || !$stdout.tty?
-      system_command! "find", args: args.kegs.map(&:to_s) + %w[-not -type d -print], print_stdout: true
+      system_command! "find", args: args.named.to_kegs.map(&:to_s) + %w[-not -type d -print], print_stdout: true
     else
-      args.kegs.each { |keg| PrettyListing.new keg }
+      args.named.to_kegs.each { |keg| PrettyListing.new keg }
     end
   end
 
@@ -107,7 +111,6 @@ module Homebrew
     lib/ruby/site_ruby/[12].*
     lib/ruby/vendor_ruby/[12].*
     manpages/brew.1
-    manpages/brew-cask.1
     share/pypy/*
     share/pypy3/*
     share/info/dir
@@ -164,11 +167,12 @@ module Homebrew
   end
 
   def list_casks(args:)
-    cask_list = Cask::Cmd::List.new args.named
-    cask_list.one = args.public_send(:'1?')
-    cask_list.versions = args.versions?
-    cask_list.full_name = args.full_name?
-    cask_list.run
+    Cask::Cmd::List.list_casks(
+      *args.named.to_casks,
+      one:       args.public_send(:'1?'),
+      full_name: args.full_name?,
+      versions:  args.versions?,
+    )
   end
 end
 

@@ -1,46 +1,48 @@
 # frozen_string_literal: true
 
-HOMEBREW_HELP = <<~EOS
-  Example usage:
-    brew search [TEXT|/REGEX/]
-    brew info [FORMULA...]
-    brew install FORMULA...
-    brew update
-    brew upgrade [FORMULA...]
-    brew uninstall FORMULA...
-    brew list [FORMULA...]
-
-  Troubleshooting:
-    brew config
-    brew doctor
-    brew install --verbose --debug FORMULA
-
-  Contributing:
-    brew create [URL [--no-fetch]]
-    brew edit [FORMULA...]
-
-  Further help:
-    brew commands
-    brew help [COMMAND]
-    man brew
-    https://docs.brew.sh
-EOS
-
-# NOTE Keep the length of vanilla --help less than 25 lines!
-# This is because the default Terminal height is 25 lines. Scrolling sucks
-# and concision is important. If more help is needed we should start
-# specialising help like the gem command does.
-# NOTE Keep lines less than 80 characters! Wrapping is just not cricket.
-# NOTE The reason the string is at the top is so 25 lines is easy to measure!
-
 require "cli/parser"
 require "commands"
 
 module Homebrew
+  # Helper module for printing help output.
+  #
+  # @api private
   module Help
+    # NOTE: Keep the length of vanilla `--help` less than 25 lines!
+    #       This is because the default Terminal height is 25 lines. Scrolling sucks
+    #       and concision is important. If more help is needed we should start
+    #       specialising help like the gem command does.
+    # NOTE: Keep lines less than 80 characters! Wrapping is just not cricket.
+    HOMEBREW_HELP = <<~EOS
+      Example usage:
+        brew search [TEXT|/REGEX/]
+        brew info [FORMULA...]
+        brew install FORMULA...
+        brew update
+        brew upgrade [FORMULA...]
+        brew uninstall FORMULA...
+        brew list [FORMULA...]
+
+      Troubleshooting:
+        brew config
+        brew doctor
+        brew install --verbose --debug FORMULA
+
+      Contributing:
+        brew create [URL [--no-fetch]]
+        brew edit [FORMULA...]
+
+      Further help:
+        brew commands
+        brew help [COMMAND]
+        man brew
+        https://docs.brew.sh
+    EOS
+    private_constant :HOMEBREW_HELP
+
     module_function
 
-    def help(cmd = nil, empty_argv: false, usage_error: nil)
+    def help(cmd = nil, empty_argv: false, usage_error: nil, remaining_args: [])
       if cmd.nil?
         # Handle `brew` (no arguments).
         if empty_argv
@@ -58,7 +60,7 @@ module Homebrew
 
       # Display command-specific (or generic) help in response to `UsageError`.
       if usage_error
-        $stderr.puts path ? command_help(cmd, path) : HOMEBREW_HELP
+        $stderr.puts path ? command_help(cmd, path, remaining_args: remaining_args) : HOMEBREW_HELP
         $stderr.puts
         onoe usage_error
         exit 1
@@ -68,16 +70,16 @@ module Homebrew
       return if path.nil?
 
       # Display help for internal command (or generic help if undocumented).
-      puts command_help(cmd, path)
+      puts command_help(cmd, path, remaining_args: remaining_args)
       exit 0
     end
 
-    def command_help(cmd, path)
+    def command_help(cmd, path, remaining_args:)
       # Only some types of commands can have a parser.
       output = if Commands.valid_internal_cmd?(cmd) ||
                   Commands.valid_internal_dev_cmd?(cmd) ||
                   Commands.external_ruby_v2_cmd_path(cmd)
-        parser_help(path)
+        parser_help(path, remaining_args: remaining_args)
       end
 
       output ||= comment_help(path)
@@ -89,16 +91,26 @@ module Homebrew
 
       output
     end
+    private_class_method :command_help
 
-    def parser_help(path)
+    def parser_help(path, remaining_args:)
       # Let OptionParser generate help text for commands which have a parser.
       cmd_parser = CLI::Parser.from_cmd_path(path)
       return unless cmd_parser
 
       # Try parsing arguments here in order to show formula options in help output.
-      cmd_parser.parse(Homebrew.args.remaining, ignore_invalid_options: true)
+      cmd_parser.parse(remaining_args, ignore_invalid_options: true)
       cmd_parser.generate_help_text
     end
+    private_class_method :parser_help
+
+    def command_help_lines(path)
+      path.read
+          .lines
+          .grep(/^#:/)
+          .map { |line| line.slice(2..-1).delete_prefix("  ") }
+    end
+    private_class_method :command_help_lines
 
     def comment_help(path)
       # Otherwise read #: lines from the file.
@@ -113,5 +125,6 @@ module Homebrew
                .gsub(/<(.*?)>/m, "#{Tty.underline}\\1#{Tty.reset}")
                .gsub(/\*(.*?)\*/m, "#{Tty.underline}\\1#{Tty.reset}")
     end
+    private_class_method :comment_help
   end
 end

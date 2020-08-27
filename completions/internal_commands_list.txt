@@ -13,6 +13,7 @@ abv
 analytics
 audit
 bottle
+bump
 bump-formula-pr
 bump-revision
 cask
@@ -80,6 +81,7 @@ tap-info
 tap-new
 test
 tests
+typecheck
 uninstal
 uninstall
 unlink

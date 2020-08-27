@@ -3,8 +3,13 @@
 require "erb"
 
 module Utils
+  # Helper module for fetching and reporting analytics data.
+  #
+  # @api private
   module Analytics
     class << self
+      include Context
+
       def report(type, metadata = {})
         return if not_this_run?
         return if disabled?
@@ -148,7 +153,7 @@ module Utils
       end
 
       def get_analytics(json, args:)
-        full_analytics = args.analytics? || Homebrew.args.verbose?
+        full_analytics = args.analytics? || verbose?
 
         ohai "Analytics"
         json["analytics"].each do |category, value|
