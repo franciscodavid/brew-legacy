@@ -5483,22 +5483,8 @@ class Cask::Audit
   def online?(); end
 
   def strict?(); end
-end
 
-class Cask::Auditor
-  def audit_appcast?(); end
-
-  def audit_download?(); end
-
-  def audit_new_cask?(); end
-
-  def audit_online?(); end
-
-  def audit_strict?(); end
-
-  def audit_token_conflicts?(); end
-
-  def quarantine?(); end
+  def token_conflicts?(); end
 end
 
 class Cask::Cask
@@ -6480,7 +6466,6 @@ class Date
   def to_default_s(); end
 
   def to_formatted_s(format=T.unsafe(nil)); end
-
   DATE_FORMATS = ::T.let(nil, ::T.untyped)
 end
 
@@ -6734,7 +6719,6 @@ end
 
 class Dir
   def self.exists?(_); end
-
 end
 
 module Docile
@@ -6903,7 +6887,6 @@ class ERB
   def def_method(mod, methodname, fname=T.unsafe(nil)); end
 
   def def_module(methodname=T.unsafe(nil)); end
-
 end
 
 class ERB::Compiler::Scanner
@@ -7106,7 +7089,6 @@ end
 
 module Exception2MessageMapper
   def bind(cl); end
-
 end
 
 Exception2MessageMapper::E2MM = Exception2MessageMapper
@@ -7261,9 +7243,13 @@ class Formula
 
   def deprecated_options(*args, &block); end
 
+  def deprecation_reason(*args, &block); end
+
   def deps(*args, &block); end
 
   def desc(*args, &block); end
+
+  def disable_reason(*args, &block); end
 
   def disabled?(*args, &block); end
 
@@ -8100,6 +8086,8 @@ module Homebrew::EnvConfig
 
   def self.curlrc?(); end
 
+  def self.debug?(); end
+
   def self.developer?(); end
 
   def self.disable_load_formula?(); end
@@ -8139,6 +8127,8 @@ module Homebrew::EnvConfig
   def self.https_proxy(); end
 
   def self.install_badge(); end
+
+  def self.livecheck_watchlist(); end
 
   def self.logs(); end
 
@@ -13376,12 +13366,14 @@ class Object
   HOMEBREW_LOCKS = ::T.let(nil, ::T.untyped)
   HOMEBREW_LOGS = ::T.let(nil, ::T.untyped)
   HOMEBREW_OFFICIAL_REPO_PREFIXES_REGEX = ::T.let(nil, ::T.untyped)
+  HOMEBREW_PATCHELF_RB_WRITE = ::T.let(nil, ::T.untyped)
   HOMEBREW_PINNED_KEGS = ::T.let(nil, ::T.untyped)
   HOMEBREW_PREFIX = ::T.let(nil, ::T.untyped)
   HOMEBREW_PRODUCT = ::T.let(nil, ::T.untyped)
   HOMEBREW_PULL_API_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_PULL_OR_COMMIT_URL_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_REPOSITORY = ::T.let(nil, ::T.untyped)
+  HOMEBREW_REQUIRED_RUBY_VERSION = ::T.let(nil, ::T.untyped)
   HOMEBREW_SHIMS_PATH = ::T.let(nil, ::T.untyped)
   HOMEBREW_TAP_CASK_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_TAP_DIR_REGEX = ::T.let(nil, ::T.untyped)
@@ -13407,6 +13399,8 @@ class Object
   PATCH_B_SHA256 = ::T.let(nil, ::T.untyped)
   PATCH_URL_A = ::T.let(nil, ::T.untyped)
   PATCH_URL_B = ::T.let(nil, ::T.untyped)
+  REQUIRED_RUBY_X = ::T.let(nil, ::T.untyped)
+  REQUIRED_RUBY_Y = ::T.let(nil, ::T.untyped)
   RUBY_BIN = ::T.let(nil, ::T.untyped)
   RUBY_COPYRIGHT = ::T.let(nil, ::T.untyped)
   RUBY_DESCRIPTION = ::T.let(nil, ::T.untyped)
@@ -13571,12 +13565,132 @@ module OpenSSL
   def self.fips_mode(); end
 end
 
+class OpenURI::Buffer
+  def <<(str); end
+
+  def io(); end
+
+  def size(); end
+  StringMax = ::T.let(nil, ::T.untyped)
+end
+
+class OpenURI::Buffer
+end
+
+class OpenURI::HTTPError
+  def initialize(message, io); end
+end
+
+class OpenURI::HTTPRedirect
+  def initialize(message, io, uri); end
+end
+
+module OpenURI::Meta
+  def content_type_parse(); end
+
+  def meta_add_field(name, value); end
+
+  def meta_add_field2(name, values); end
+
+  def meta_setup_encoding(); end
+  RE_LWS = ::T.let(nil, ::T.untyped)
+  RE_PARAMETERS = ::T.let(nil, ::T.untyped)
+  RE_QUOTED_STRING = ::T.let(nil, ::T.untyped)
+  RE_TOKEN = ::T.let(nil, ::T.untyped)
+end
+
+module OpenURI::Meta
+  def self.init(obj, src=T.unsafe(nil)); end
+end
+
+module OpenURI
+  def self.check_options(options); end
+
+  def self.open_http(buf, target, proxy, options); end
+
+  def self.open_loop(uri, options); end
+
+  def self.open_uri(name, *rest); end
+
+  def self.redirectable?(uri1, uri2); end
+
+  def self.scan_open_optional_arguments(*rest); end
+end
+
 class PATH
   def each(*args, &block); end
 end
 
 module ParallelTests
+  RUBY_BINARY = ::T.let(nil, ::T.untyped)
+  VERSION = ::T.let(nil, ::T.untyped)
+  Version = ::T.let(nil, ::T.untyped)
   WINDOWS = ::T.let(nil, ::T.untyped)
+end
+
+class ParallelTests::CLI
+  def run(argv); end
+end
+
+class ParallelTests::CLI
+end
+
+class ParallelTests::Grouper
+end
+
+class ParallelTests::Grouper
+  def self.by_scenarios(tests, num_groups, options=T.unsafe(nil)); end
+
+  def self.by_steps(tests, num_groups, options); end
+
+  def self.in_even_groups_by_size(items, num_groups, options=T.unsafe(nil)); end
+end
+
+class ParallelTests::Pids
+  def add(pid); end
+
+  def all(); end
+
+  def count(); end
+
+  def delete(pid); end
+
+  def file_path(); end
+
+  def initialize(file_path); end
+
+  def mutex(); end
+end
+
+class ParallelTests::Pids
+end
+
+module ParallelTests
+  def self.bundler_enabled?(); end
+
+  def self.delta(); end
+
+  def self.determine_number_of_processes(count); end
+
+  def self.first_process?(); end
+
+  def self.last_process?(); end
+
+  def self.now(); end
+
+  def self.number_of_running_processes(); end
+
+  def self.pid_file_path(); end
+
+  def self.pids(); end
+
+  def self.stop_all_processes(); end
+
+  def self.wait_for_other_processes_to_finish(); end
+
+  def self.with_pid_file(); end
+
+  def self.with_ruby_binary(command); end
 end
 
 module Parlour
@@ -19992,6 +20106,10 @@ class RuboCop::AST::Node
   def val_node(node=T.unsafe(nil)); end
 end
 
+class RuboCop::AST::RegexpNode
+  include ::RuboCop::Ext::RegexpNode
+end
+
 class RuboCop::Cask::AST::CaskBlock
   def cask_body(*args, &block); end
 end
@@ -20152,6 +20270,14 @@ class RuboCop::Cop::FormulaAudit::DependencyOrder
   def test_dependency?(node0); end
 
   def uses_from_macos_node?(node=T.unsafe(nil)); end
+end
+
+class RuboCop::Cop::FormulaAudit::DeprecateDisableDate
+  def date(node0); end
+end
+
+class RuboCop::Cop::FormulaAudit::DeprecateDisableReason
+  def reason(node0); end
 end
 
 class RuboCop::Cop::FormulaAudit::Miscellaneous
@@ -21609,6 +21735,7 @@ class SimpleCov::Formatter::Codecov
   BITRISE = ::T.let(nil, ::T.untyped)
   BUILDKITE = ::T.let(nil, ::T.untyped)
   CIRCLE = ::T.let(nil, ::T.untyped)
+  CODEBUILD = ::T.let(nil, ::T.untyped)
   CODESHIP = ::T.let(nil, ::T.untyped)
   DRONEIO = ::T.let(nil, ::T.untyped)
   GITHUB = ::T.let(nil, ::T.untyped)
@@ -22075,6 +22202,40 @@ class SortedSet
   def self.setup(); end
 end
 
+class Spoom::Cli::Main
+  extend ::T::Sig
+end
+
+class Spoom::Sorbet::Config
+  extend ::T::Sig
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
+class Spoom::Sorbet::Errors::Error
+  extend ::T::Sig
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
+class Spoom::Sorbet::Errors::Parser
+  extend ::T::Sig
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
+class Spoom::Sorbet::Metrics
+  extend ::T::Sig
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
+module Spoom::Sorbet
+  extend ::T::Sig
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
 module Stdenv
   def O0(); end
 
@@ -22095,15 +22256,21 @@ class String
 
   def black(); end
 
+  def blink(); end
+
+  def blue(); end
+
+  def bold(); end
+
   def camelcase(first_letter=T.unsafe(nil)); end
 
   def camelize(first_letter=T.unsafe(nil)); end
 
   def classify(); end
 
-  def colorize(color_code); end
-
   def constantize(); end
+
+  def cyan(); end
 
   def dasherize(); end
 
@@ -22123,6 +22290,8 @@ class String
 
   def green(); end
 
+  def hide(); end
+
   def html_safe(); end
 
   def humanize(capitalize: T.unsafe(nil), keep_id_suffix: T.unsafe(nil)); end
@@ -22137,11 +22306,63 @@ class String
 
   def isutf8(); end
 
+  def italic(); end
+
   def kconv(to_enc, from_enc=T.unsafe(nil)); end
 
   def last(limit=T.unsafe(nil)); end
 
+  def light_black(); end
+
+  def light_blue(); end
+
+  def light_cyan(); end
+
+  def light_green(); end
+
+  def light_magenta(); end
+
+  def light_red(); end
+
+  def light_white(); end
+
+  def light_yellow(); end
+
+  def magenta(); end
+
   def mb_chars(); end
+
+  def on_black(); end
+
+  def on_blue(); end
+
+  def on_cyan(); end
+
+  def on_green(); end
+
+  def on_light_black(); end
+
+  def on_light_blue(); end
+
+  def on_light_cyan(); end
+
+  def on_light_green(); end
+
+  def on_light_magenta(); end
+
+  def on_light_red(); end
+
+  def on_light_white(); end
+
+  def on_light_yellow(); end
+
+  def on_magenta(); end
+
+  def on_red(); end
+
+  def on_white(); end
+
+  def on_yellow(); end
 
   def parameterize(separator: T.unsafe(nil), preserve_case: T.unsafe(nil), locale: T.unsafe(nil)); end
 
@@ -22166,6 +22387,8 @@ class String
   def squish!(); end
 
   def starts_with?(*_); end
+
+  def swap(); end
 
   def tableize(); end
 
@@ -22209,9 +22432,15 @@ class String
 
   def truncate_words(words_count, options=T.unsafe(nil)); end
 
+  def underline(); end
+
   def underscore(); end
 
   def upcase_first(); end
+
+  def white(); end
+
+  def yellow(); end
   BLANK_RE = ::T.let(nil, ::T.untyped)
   ENCODED_BLANKS = ::T.let(nil, ::T.untyped)
 end
@@ -23055,12 +23284,6 @@ class Tapioca::Loader
   extend ::T::Private::Methods::SingletonMethodHooks
 end
 
-class Tapioca::SorbetConfig
-  extend ::T::Sig
-  extend ::T::Private::Methods::MethodHooks
-  extend ::T::Private::Methods::SingletonMethodHooks
-end
-
 class Tempfile
   def _close(); end
 
@@ -23520,7 +23743,6 @@ class Time
   def to_default_s(); end
 
   def to_formatted_s(format=T.unsafe(nil)); end
-
   COMMON_YEAR_DAYS_IN_MONTH = ::T.let(nil, ::T.untyped)
   DATE_FORMATS = ::T.let(nil, ::T.untyped)
 end
@@ -23553,7 +23775,6 @@ class Time
   def self.zone_default(); end
 
   def self.zone_default=(zone_default); end
-
 end
 
 class TracePoint
@@ -23603,6 +23824,10 @@ module URI
 end
 
 class URI::FTP
+  def buffer_open(buf, proxy, options); end
+end
+
+class URI::FTP
   def self.new2(user, password, host, port, path, typecode=T.unsafe(nil), arg_check=T.unsafe(nil)); end
 end
 
@@ -23619,6 +23844,10 @@ class URI::File
 end
 
 class URI::File
+end
+
+class URI::HTTP
+  def buffer_open(buf, proxy, options); end
 end
 
 class URI::LDAP

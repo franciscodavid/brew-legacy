@@ -63,8 +63,8 @@ module Homebrew
   def info
     args = info_args.parse
 
-    if args.days.present?
-      raise UsageError, "--days must be one of #{VALID_DAYS.join(", ")}" unless VALID_DAYS.include?(args.days)
+    if args.days.present? && !VALID_DAYS.include?(args.days)
+      raise UsageError, "--days must be one of #{VALID_DAYS.join(", ")}"
     end
 
     if args.category.present?
@@ -79,10 +79,7 @@ module Homebrew
 
     if args.json
       raise UsageError, "invalid JSON version: #{args.json}" unless ["v1", true].include? args.json
-
-      if !(args.all? || args.installed?) && args.no_named?
-        raise FormulaUnspecifiedError if args.no_named?
-      end
+      raise FormulaUnspecifiedError if !(args.all? || args.installed?) && args.no_named?
 
       print_json(args: args)
     elsif args.github?
@@ -169,10 +166,6 @@ module Homebrew
       specs << s
     end
 
-    if devel = f.devel
-      specs << "devel #{devel.version}"
-    end
-
     specs << "HEAD" if f.head
 
     attrs = []
@@ -232,7 +225,7 @@ module Homebrew
       end
     end
 
-    if !f.options.empty? || f.head || f.devel
+    if !f.options.empty? || f.head
       ohai "Options"
       Options.dump_for_formula f
     end

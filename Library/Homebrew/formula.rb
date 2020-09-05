@@ -113,12 +113,10 @@ class Formula
   # @private
   attr_reader :stable
 
-  # The development {SoftwareSpec} for this {Formula}.
-  # Installed when using `brew install --devel`
-  # `nil` if there is no development version.
-  # @see #stable
   # @private
-  attr_reader :devel
+  def devel
+    odisabled "Formula#devel"
+  end
 
   # The HEAD {SoftwareSpec} for this {Formula}.
   # Installed when using `brew install --HEAD`
@@ -136,7 +134,7 @@ class Formula
   protected :active_spec
 
   # A symbol to indicate currently active {SoftwareSpec}.
-  # It's either :stable, :devel or :head
+  # It's either :stable or :head
   # @see #active_spec
   # @private
   attr_reader :active_spec_sym
@@ -207,14 +205,11 @@ class Formula
     @full_alias_name = full_name_with_optional_tap(@alias_name)
 
     spec_eval :stable
-    spec_eval :devel
     spec_eval :head
 
     @active_spec = determine_active_spec(spec)
     @active_spec_sym = if head?
       :head
-    elsif devel?
-      :devel
     else
       :stable
     end
@@ -258,7 +253,7 @@ class Formula
   end
 
   def determine_active_spec(requested)
-    spec = send(requested) || stable || devel || head
+    spec = send(requested) || stable || head
     spec || raise(FormulaSpecificationError, "formulae require at least a URL")
   end
 
@@ -326,10 +321,9 @@ class Formula
     active_spec == stable
   end
 
-  # Is the currently active {SoftwareSpec} a {#devel} build?
   # @private
   def devel?
-    active_spec == devel
+    odisabled "Formula#devel?"
   end
 
   # Is the currently active {SoftwareSpec} a {#head} build?
@@ -488,11 +482,11 @@ class Formula
   delegate compiler_failures: :active_spec
 
   # If this {Formula} is installed.
-  # This is actually just a check for if the {#installed_prefix} directory
+  # This is actually just a check for if the {#latest_installed_prefix} directory
   # exists and is not empty.
   # @private
   def latest_version_installed?
-    (dir = installed_prefix).directory? && !dir.children.empty?
+    (dir = latest_installed_prefix).directory? && !dir.children.empty?
   end
 
   # If at least one version of {Formula} is installed.
@@ -533,7 +527,6 @@ class Formula
 
     return true if tab.version_scheme < version_scheme
     return true if stable && tab.stable_version && tab.stable_version < stable.version
-    return true if devel && tab.devel_version && tab.devel_version < devel.version
     return false unless fetch_head
     return false unless head&.downloader.is_a?(VCSDownloadStrategy)
 
@@ -544,26 +537,16 @@ class Formula
     end
   end
 
-  # The latest prefix for this formula. Checks for {#head}, then {#devel}
-  # and then {#stable}'s {#prefix}
+  # The latest prefix for this formula. Checks for {#head} and then {#stable}'s {#prefix}
   # @private
-  def installed_prefix
+  def latest_installed_prefix
     if head && (head_version = latest_head_version) && !head_version_outdated?(head_version)
       latest_head_prefix
-    elsif devel && (devel_prefix = prefix(PkgVersion.new(devel.version, revision))).directory?
-      devel_prefix
     elsif stable && (stable_prefix = prefix(PkgVersion.new(stable.version, revision))).directory?
       stable_prefix
     else
       prefix
     end
-  end
-
-  # The currently installed version for this formula. Will raise an exception
-  # if the formula is not installed.
-  # @private
-  def installed_version
-    Keg.new(installed_prefix).version
   end
 
   # The directory in the cellar that the formula is installed to.
@@ -1148,11 +1131,23 @@ class Formula
   # @return [Boolean]
   delegate deprecated?: :"self.class"
 
+  # The reason this {Formula} is deprecated.
+  # Returns `nil` if no reason is specified or the formula is not deprecated.
+  # @method deprecation_reason
+  # @return [String, Symbol]
+  delegate deprecation_reason: :"self.class"
+
   # Whether this {Formula} is disabled (i.e. cannot be installed).
   # Defaults to false.
   # @method disabled?
   # @return [Boolean]
   delegate disabled?: :"self.class"
+
+  # The reason this {Formula} is disabled.
+  # Returns `nil` if no reason is specified or the formula is not disabled.
+  # @method disable_reason
+  # @return [String, Symbol]
+  delegate disable_reason: :"self.class"
 
   def skip_cxxstdlib_check?
     false
@@ -1465,14 +1460,12 @@ class Formula
   # @private
   def self.each
     files.each do |file|
-      yield begin
-        Formulary.factory(file)
-      rescue FormulaUnavailableError => e
-        # Don't let one broken formula break commands. But do complain.
-        onoe "Failed to import: #{file}"
-        puts e
-        next
-      end
+      yield Formulary.factory(file)
+    rescue FormulaUnavailableError, FormulaUnreadableError => e
+      # Don't let one broken formula break commands. But do complain.
+      onoe "Failed to import: #{file}"
+      $stderr.puts e
+      next
     end
   end
 
@@ -1605,20 +1598,30 @@ class Formula
   # Returns a Keg for the opt_prefix or installed_prefix if they exist.
   # If not, return nil.
   # @private
-  def opt_or_installed_prefix_keg
-    Formula.cache[:opt_or_installed_prefix_keg] ||= {}
-    Formula.cache[:opt_or_installed_prefix_keg][full_name] ||= if optlinked? && opt_prefix.exist?
-      Keg.new(opt_prefix)
-    elsif (latest_installed_prefix = installed_prefixes.last)
-      Keg.new(latest_installed_prefix)
+  def any_installed_keg
+    Formula.cache[:any_installed_keg] ||= {}
+    Formula.cache[:any_installed_keg][full_name] ||= if (installed_prefix = any_installed_prefix)
+      Keg.new(installed_prefix)
     end
+  end
+
+  def any_installed_prefix
+    if optlinked? && opt_prefix.exist?
+      opt_prefix
+    elsif (latest_installed_prefix = installed_prefixes.last)
+      latest_installed_prefix
+    end
+  end
+
+  def any_installed_version
+    any_installed_keg&.version
   end
 
   # Returns a list of Dependency objects that are required at runtime.
   # @private
   def runtime_dependencies(read_from_tab: true, undeclared: true)
     deps = if read_from_tab && undeclared &&
-              (tab_deps = opt_or_installed_prefix_keg&.runtime_dependencies)
+              (tab_deps = any_installed_keg&.runtime_dependencies)
       tab_deps.map do |d|
         full_name = d["full_name"]
         next unless full_name
@@ -1653,12 +1656,12 @@ class Formula
   end
 
   def runtime_installed_formula_dependents
-    # `opt_or_installed_prefix_keg` and `runtime_dependencies` `select`s ensure
+    # `any_installed_keg` and `runtime_dependencies` `select`s ensure
     # that we don't end up with something `Formula#runtime_dependencies` can't
     # read from a `Tab`.
     Formula.cache[:runtime_installed_formula_dependents] = {}
     Formula.cache[:runtime_installed_formula_dependents][full_name] ||= Formula.installed
-                                                                               .select(&:opt_or_installed_prefix_keg)
+                                                                               .select(&:any_installed_keg)
                                                                                .select(&:runtime_dependencies)
                                                                                .select do |f|
       f.runtime_formula_dependencies.any? do |dep|
@@ -1698,7 +1701,6 @@ class Formula
       "homepage"                 => homepage,
       "versions"                 => {
         "stable" => stable&.version&.to_s,
-        "devel"  => devel&.version&.to_s,
         "head"   => head&.version&.to_s,
         "bottle" => !bottle_specification.checksums.empty?,
       },
@@ -1735,34 +1737,32 @@ class Formula
       "disabled"                 => disabled?,
     }
 
-    %w[stable devel].each do |spec_sym|
-      next unless spec = send(spec_sym)
-
-      hsh["urls"][spec_sym] = {
-        "url"      => spec.url,
-        "tag"      => spec.specs[:tag],
-        "revision" => spec.specs[:revision],
+    if stable
+      hsh["urls"]["stable"] = {
+        "url"      => stable.url,
+        "tag"      => stable.specs[:tag],
+        "revision" => stable.specs[:revision],
       }
 
-      next unless spec.bottle_defined?
-
-      bottle_spec = spec.bottle_specification
-      bottle_info = {
-        "rebuild"  => bottle_spec.rebuild,
-        "cellar"   => (cellar = bottle_spec.cellar).is_a?(Symbol) ? cellar.inspect : cellar,
-        "prefix"   => bottle_spec.prefix,
-        "root_url" => bottle_spec.root_url,
-      }
-      bottle_info["files"] = {}
-      bottle_spec.collector.each_key do |os|
-        bottle_url = "#{bottle_spec.root_url}/#{Bottle::Filename.create(self, os, bottle_spec.rebuild).bintray}"
-        checksum = bottle_spec.collector[os]
-        bottle_info["files"][os] = {
-          "url"                   => bottle_url,
-          checksum.hash_type.to_s => checksum.hexdigest,
+      if bottle_defined?
+        bottle_spec = stable.bottle_specification
+        bottle_info = {
+          "rebuild"  => bottle_spec.rebuild,
+          "cellar"   => (cellar = bottle_spec.cellar).is_a?(Symbol) ? cellar.inspect : cellar,
+          "prefix"   => bottle_spec.prefix,
+          "root_url" => bottle_spec.root_url,
         }
+        bottle_info["files"] = {}
+        bottle_spec.collector.each_key do |os|
+          bottle_url = "#{bottle_spec.root_url}/#{Bottle::Filename.create(self, os, bottle_spec.rebuild).bintray}"
+          checksum = bottle_spec.collector[os]
+          bottle_info["files"][os] = {
+            "url"                   => bottle_url,
+            checksum.hash_type.to_s => checksum.hexdigest,
+          }
+        end
+        hsh["bottle"]["stable"] = bottle_info
       end
-      hsh["bottle"][spec_sym] = bottle_info
     end
 
     hsh["options"] = options.map do |opt|
@@ -1898,7 +1898,7 @@ class Formula
   # but the formula links to.
   # @private
   def undeclared_runtime_dependencies
-    keg = opt_or_installed_prefix_keg
+    keg = any_installed_keg
     return [] unless keg
 
     CacheStoreDatabase.use(:linkage) do |db|
@@ -2188,18 +2188,9 @@ class Formula
       when :test
         define_method(:test_defined?) { true }
       when :patches
-        odeprecated "a Formula#patches definition", "'patch do' block calls"
+        odisabled "a Formula#patches definition", "'patch do' block calls"
       when :options
-        odeprecated "a Formula#options definition", "'option do' block calls"
-        instance = allocate
-
-        specs.each do |spec|
-          instance.options.each do |opt, desc|
-            spec.option(opt[/^--(.+)$/, 1], desc)
-          end
-        end
-
-        remove_method(:options)
+        odisabled "a Formula#options definition", "'option do' block calls"
       end
     end
 
@@ -2244,8 +2235,7 @@ class Formula
         @licenses
       else
         if args.is_a? Array
-          # TODO: enable for next major/minor release
-          # odeprecated "`license [...]`", "`license any_of: [...]`"
+          odeprecated "`license [...]`", "`license any_of: [...]`"
           args = { any_of: args }
         end
         @licenses = args
@@ -2303,10 +2293,10 @@ class Formula
     # <pre>version_scheme 1</pre>
     attr_rw :version_scheme
 
-    # A list of the {.stable}, {.devel} and {.head} {SoftwareSpec}s.
+    # A list of the {.stable} and {.head} {SoftwareSpec}s.
     # @private
     def specs
-      @specs ||= [stable, devel, head].freeze
+      @specs ||= [stable, head].freeze
     end
 
     # @!attribute [w] url
@@ -2434,25 +2424,9 @@ class Formula
       @stable.instance_eval(&block)
     end
 
-    # @!attribute [w] devel
-    # Adds a {.devel} {SoftwareSpec}.
-    # This can be installed by passing the `--devel` option to allow
-    # installing non-stable (e.g. beta) versions of software.
-    #
-    # <pre>devel do
-    #   url "https://example.com/archive-2.0-beta.tar.gz"
-    #   sha256 "2a2ba417eebaadcb4418ee7b12fe2998f26d6e6f7fda7983412ff66a741ab6f7"
-    #
-    #   depends_on "cairo"
-    #   depends_on "pixman"
-    # end</pre>
     # @private
-    def devel(&block)
-      @devel ||= SoftwareSpec.new(flags: build_flags)
-      return @devel unless block_given?
-
-      odeprecated "'devel' blocks in formulae", "'head' blocks or @-versioned formulae"
-      @devel.instance_eval(&block)
+    def devel
+      odisabled "'devel' blocks in formulae", "'head' blocks or @-versioned formulae"
     end
 
     # @!attribute [w] head
@@ -2766,9 +2740,14 @@ class Formula
     # Deprecates a {Formula} (on a given date, if provided) so a warning is
     # shown on each installation. If the date has not yet passed the formula
     # will not be deprecated.
-    def deprecate!(date: nil)
+    # <pre>deprecate! date: "2020-08-27", because: :unmaintained</pre>
+    # <pre>deprecate! date: "2020-08-27", because: "it has been replaced by"</pre>
+    def deprecate!(date: nil, because: nil)
+      odeprecated "`deprecate!` without a reason", "`deprecate! because: \"reason\"`" if because.blank?
+
       return if date.present? && Date.parse(date) > Date.today
 
+      @deprecation_reason = because if because.present?
       @deprecated = true
     end
 
@@ -2779,15 +2758,26 @@ class Formula
       @deprecated == true
     end
 
+    # The reason for deprecation of a {Formula}.
+    # Returns `nil` if no reason was provided or the formula is not deprecated.
+    # @return [String, Symbol]
+    attr_reader :deprecation_reason
+
     # Disables a {Formula}  (on a given date, if provided) so it cannot be
     # installed. If the date has not yet passed the formula
     # will be deprecated instead of disabled.
-    def disable!(date: nil)
+    # <pre>disable! date: "2020-08-27", because: :does_not_build</pre>
+    # <pre>disable! date: "2020-08-27", because: "has been replaced by foo"</pre>
+    def disable!(date: nil, because: nil)
+      odeprecated "`disable!` without a reason", "`disable! because: \"reason\"`" if because.blank?
+
       if date.present? && Date.parse(date) > Date.today
+        @deprecation_reason = because if because.present?
         @deprecated = true
         return
       end
 
+      @disable_reason = because if because.present?
       @disabled = true
     end
 
@@ -2797,6 +2787,11 @@ class Formula
     def disabled?
       @disabled == true
     end
+
+    # The reason for a {Formula} is disabled.
+    # Returns `nil` if no reason was provided or the formula is not disabled.
+    # @return [String, Symbol]
+    attr_reader :disable_reason
 
     # @private
     def link_overwrite(*paths)

@@ -202,10 +202,41 @@ class FormulaInstaller
   def check_install_sanity
     raise FormulaInstallationAlreadyAttemptedError, formula if self.class.attempted.include?(formula)
 
+    deprecate_disable_reasons = {
+      does_not_build:      "does not build",
+      no_license:          "has no license",
+      repo_archived:       "has an archived upstream repository",
+      repo_removed:        "has a removed upstream repository",
+      unmaintained:        "is not maintained upstream",
+      unsupported:         "is not supported upstream",
+      deprecated_upstream: "is deprecated upstream",
+      versioned_formula:   "is a versioned formula",
+    }
+
     if formula.deprecated?
-      opoo "#{formula.full_name} has been deprecated!"
+      if formula.deprecation_reason.present?
+        reason = if deprecate_disable_reasons.key? formula.deprecation_reason
+          deprecate_disable_reasons[formula.deprecation_reason]
+        else
+          formula.deprecation_reason
+        end
+
+        opoo "#{formula.full_name} has been deprecated because it #{reason}!"
+      else
+        opoo "#{formula.full_name} has been deprecated!"
+      end
     elsif formula.disabled?
-      odie "#{formula.full_name} has been disabled!"
+      if formula.disable_reason.present?
+        reason = if deprecate_disable_reasons.key? formula.disable_reason
+          deprecate_disable_reasons[formula.disable_reason]
+        else
+          formula.disable_reason
+        end
+
+        odie "#{formula.full_name} has been disabled because it #{reason}!"
+      else
+        odie "#{formula.full_name} has been disabled!"
+      end
     end
 
     return if ignore_deps?
@@ -574,8 +605,6 @@ class FormulaInstaller
   def display_options(formula)
     options = if formula.head?
       ["--HEAD"]
-    elsif formula.devel?
-      ["--devel"]
     else
       []
     end
@@ -778,11 +807,7 @@ class FormulaInstaller
       args << "--env=std"
     end
 
-    if formula.head?
-      args << "--HEAD"
-    elsif formula.devel?
-      args << "--devel"
-    end
+    args << "--HEAD" if formula.head?
 
     args
   end

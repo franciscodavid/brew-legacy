@@ -32,22 +32,15 @@ jobs:
 
     - run: brew config
 
-    - run: brew doctor
-
-    - name: Cache Bundler RubyGems
-      id: cache
-      uses: actions/cache@v1
-      with:
-        path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-        key: ${{ runner.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-        restore-keys: ${{ runner.os }}-rubygems-
-
+    # Can't cache this because we need to check that it doesn't fail the
+    # "uncommitted RubyGems" step with a cold cache.
     - name: Install Bundler RubyGems
-      if: steps.cache.outputs.cache-hit != 'true'
       run: brew install-bundler-gems
 
     - name: Check for uncommitted RubyGems
       run: git diff --stat --exit-code Library/Homebrew/vendor/bundle/ruby
+
+    - run: brew doctor
 
     - name: Set up Homebrew official command taps
       run: |
@@ -146,12 +139,12 @@ jobs:
           brew test-bot --only-formulae --test-default-formula
         fi
 
-    - name: Deploy the Docker image to GitHub and Docker Hub
+    - name: Deploy the Docker image to GitHub Packages and Docker Hub
       if: matrix.os == 'ubuntu-latest' && github.ref == 'refs/heads/master'
       run: |
-        docker login docker.pkg.github.com -u BrewTestBot -p ${{secrets.GITHUB_TOKEN}}
-        docker tag brew "docker.pkg.github.com/homebrew/brew/ubuntu16.04:master"
-        docker push "docker.pkg.github.com/homebrew/brew/ubuntu16.04:master"
-        docker login -u brewtestbot -p ${{secrets.DOCKER_TOKEN}}
+        echo ${{secrets.HOMEBREW_GITHUB_PACKAGES_API_TOKEN}} | docker login ghcr.io -u BrewTestBot --password-stdin
+        docker tag brew "ghcr.io/homebrew/ubuntu16.04:master"
+        docker push "ghcr.io/homebrew/ubuntu16.04:master"
+        echo ${{secrets.DOCKER_TOKEN}} | docker login -u brewtestbot --password-stdin
         docker tag brew "homebrew/ubuntu16.04:master"
         docker push "homebrew/ubuntu16.04:master"

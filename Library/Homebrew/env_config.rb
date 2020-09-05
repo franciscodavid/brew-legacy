@@ -173,6 +173,11 @@ module Homebrew
         default_text: 'The "Beer Mug" emoji.',
         default:      "🍺",
       },
+      HOMEBREW_LIVECHECK_WATCHLIST:       {
+        description: "Use this file to get the list of default Formulae to check when no Formula argument " \
+                     "is passed to `brew livecheck`",
+        default:     "$HOME/.brew_livecheck_watchlist",
+      },
       HOMEBREW_LOGS:                      {
         description:  "Use the specified directory to store log files.",
         default_text: "macOS: `$HOME/Library/Logs/Homebrew`, "\
@@ -261,6 +266,10 @@ module Homebrew
       },
       HOMEBREW_VERBOSE:                   {
         description: "If set, always assume `--verbose` when running commands.",
+        boolean:     true,
+      },
+      HOMEBREW_DEBUG:                     {
+        description: "If set, always assume `--debug` when running commands.",
         boolean:     true,
       },
       HOMEBREW_VERBOSE_USING_DOTS:        {

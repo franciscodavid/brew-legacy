@@ -327,8 +327,6 @@ installed formulae or, every 30 days, for all formulae.
   Install from a bottle if it exists for the current or newest version of macOS, even if it would not normally be used for installation.
 * `--include-test`:
   Install testing dependencies required to run `brew test` *`formula`*.
-* `--devel`:
-  If *`formula`* defines it, install the development version.
 * `--HEAD`:
   If *`formula`* defines it, install the HEAD version, aka. master, trunk, unstable.
 * `--fetch-HEAD`:
@@ -686,10 +684,6 @@ specify *`formula`* as a required or recommended dependency for their stable bui
   Include all formulae that specify *`formula`* as `:optional` type dependency.
 * `--skip-recommended`:
   Skip all formulae that specify *`formula`* as `:recommended` type dependency.
-* `--devel`:
-  Show usage of *`formula`* by development builds.
-* `--HEAD`:
-  Show usage of *`formula`* by HEAD builds.
 
 ### `--cache` [*`options`*] [*`formula|cask`*]
 
@@ -847,7 +841,9 @@ nor vice versa. It must use whichever style specification the formula already us
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
 * `--write`:
-  When passed along with `--dry-run`, perform a not-so-dry run by making the expected file modifications but not taking any Git actions.
+  Make the expected file modifications without taking any Git actions.
+* `--commit`:
+  When passed with `--write`, generate a new commit after writing changes to the formula file.
 * `--no-audit`:
   Don't run `brew audit` before opening the PR.
 * `--strict`:
@@ -992,6 +988,26 @@ provided, check all kegs. Raises an error if run on uninstalled formulae.
 * `--cached`:
   Print the cached linkage values stored in `HOMEBREW_CACHE`, set by a previous `brew linkage` run.
 
+### `livecheck` [*`formulae`*]
+
+Check for newer versions of formulae from upstream.
+
+If no formula argument is passed, the list of formulae to check is taken from `HOMEBREW_LIVECHECK_WATCHLIST`
+or `~/.brew_livecheck_watchlist`.
+
+* `--full-name`:
+  Print formulae with fully-qualified names.
+* `--tap`:
+  Check the formulae within the given tap, specified as *`user`*`/`*`repo`*.
+* `--installed`:
+  Check formulae that are currently installed.
+* `--json`:
+  Output informations in JSON format.
+* `--all`:
+  Check all available formulae.
+* `--newer-only`:
+  Show the latest version only if it's newer than the formula.
+
 ### `man` [*`options`*]
 
 Generate Homebrew's manpages.
@@ -1106,16 +1122,18 @@ Run a Ruby instance with Homebrew's libraries loaded, e.g.
 * `-e`:
   Execute the given text string as a script.
 
-### `sh` [*`options`*]
+### `sh` [*`options`*] [*`file`*]
 
-Start a Homebrew build environment shell. Uses our years-battle-hardened
-Homebrew build logic to help your `./configure && make && make install`
-or even your `gem install` succeed. Especially handy if you run Homebrew
+Homebrew build environment that uses years-battle-hardened
+build logic to help your `./configure && make && make install`
+and even your `gem install` succeed. Especially handy if you run Homebrew
 in an Xcode-only configuration since it adds tools like `make` to your `PATH`
 which build systems would not find otherwise.
 
 * `--env`:
   Use the standard `PATH` instead of superenv's when `std` is passed.
+* `-c`, `--cmd`:
+  Execute commands in a non-interactive shell.
 
 ### `sponsors`
 
@@ -1589,6 +1607,11 @@ For example, you might add something like the following to your ~/.profile, ~/.b
 
     *Default:* The "Beer Mug" emoji.
 
+  * `HOMEBREW_LIVECHECK_WATCHLIST`:
+    Use this file to get the list of default Formulae to check when no Formula argument is passed to `brew livecheck`
+
+    *Default:* `$HOME/.brew_livecheck_watchlist`.
+
   * `HOMEBREW_LOGS`:
     Use the specified directory to store log files.
 
@@ -1653,6 +1676,9 @@ For example, you might add something like the following to your ~/.profile, ~/.b
 
   * `HOMEBREW_VERBOSE`:
     If set, always assume `--verbose` when running commands.
+
+  * `HOMEBREW_DEBUG`:
+    If set, always assume `--debug` when running commands.
 
   * `HOMEBREW_VERBOSE_USING_DOTS`:
     If set, verbose output will print a `.` no more than once a minute. This can be useful to avoid long-running Homebrew commands being killed due to no output.

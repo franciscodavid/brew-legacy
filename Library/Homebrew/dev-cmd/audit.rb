@@ -117,7 +117,7 @@ module Homebrew
     end
 
     # Check style in a single batch run up front for performance
-    style_results = Style.check_style_json(style_files, options) if style_files
+    style_offenses = Style.check_style_json(style_files, options) if style_files
     # load licenses
     spdx_license_data = SPDX.license_data
     spdx_exception_data = SPDX.exception_data
@@ -134,7 +134,7 @@ module Homebrew
         spdx_license_data:   spdx_license_data,
         spdx_exception_data: spdx_exception_data,
       }
-      options[:style_offenses] = style_results.file_offenses(f.path) if style_results
+      options[:style_offenses] = style_offenses.for_path(f.path) if style_offenses
       options[:display_cop_names] = args.display_cop_names?
       options[:build_stable] = args.build_stable?
 
@@ -229,7 +229,7 @@ module Homebrew
       @problems = []
       @new_formula_problems = []
       @text = FormulaText.new(formula.path)
-      @specs = %w[stable devel head].map { |s| formula.send(s) }.compact
+      @specs = %w[stable head].map { |s| formula.send(s) }.compact
       @spdx_license_data = options[:spdx_license_data]
       @spdx_exception_data = options[:spdx_exception_data]
     end
@@ -518,6 +518,7 @@ module Homebrew
     VERSIONED_KEG_ONLY_ALLOWLIST = %w[
       autoconf@2.13
       bash-completion@2
+      clang-format@8
       gnupg@1.4
       libsigc++@2
       lua@5.1
@@ -700,6 +701,8 @@ module Homebrew
       "libepoxy"            => "1.5",
     }.freeze
 
+    GITLAB_PRERELEASE_ALLOWLIST = {}.freeze
+
     GITHUB_PRERELEASE_ALLOWLIST = {
       "cbmc"         => "5.12.6",
       "elm-format"   => "0.8.3",
@@ -715,9 +718,8 @@ module Homebrew
 
     def audit_specs
       problem "Head-only (no stable download)" if head_only?(formula)
-      problem "Devel-only (no stable download)" if devel_only?(formula)
 
-      %w[Stable Devel HEAD].each do |name|
+      %w[Stable HEAD].each do |name|
         spec_name = name.downcase.to_sym
         next unless spec = formula.send(spec_name)
 
@@ -742,27 +744,15 @@ module Homebrew
         )
       end
 
-      %w[Stable Devel].each do |name|
-        next unless spec = formula.send(name.downcase)
-
-        version = spec.version
-        problem "#{name}: version (#{version}) is set to a string without a digit" if version.to_s !~ /\d/
+      if stable = formula.stable
+        version = stable.version
+        problem "Stable: version (#{version}) is set to a string without a digit" if version.to_s !~ /\d/
         if version.to_s.start_with?("HEAD")
-          problem "#{name}: non-HEAD version name (#{version}) should not begin with HEAD"
-        end
-      end
-
-      if formula.stable && formula.devel
-        if formula.devel.version < formula.stable.version
-          problem "devel version #{formula.devel.version} is older than stable version #{formula.stable.version}"
-        elsif formula.devel.version == formula.stable.version
-          problem "stable and devel versions are identical"
+          problem "Stable: non-HEAD version name (#{version}) should not begin with HEAD"
         end
       end
 
       return unless @core_tap
-
-      problem "Formulae in homebrew/core should not have a `devel` spec" if formula.devel
 
       if formula.head && @versioned_formula
         head_spec_message = "Versioned formulae should not have a `HEAD` spec"
@@ -801,6 +791,17 @@ module Homebrew
         return if stable_url_minor_version.even?
 
         problem "#{stable.version} is a development release"
+
+      when %r{https?://gitlab\.com/([\w-]+)/([\w-]+)}
+        owner = Regexp.last_match(1)
+        repo = Regexp.last_match(2)
+
+        return unless @online && (release = SharedAudits.gitlab_release_data(owner, repo, stable.version))
+
+        release_date = Date.parse(release["released_at"])
+        if release_date > Date.today && (GITLAB_PRERELEASE_ALLOWLIST[formula.name] != formula.version)
+          problem "#{stable.version} is a GitLab prerelease"
+        end
       when %r{^https://github.com/([\w-]+)/([\w-]+)}
         owner = Regexp.last_match(1)
         repo = Regexp.last_match(2)
@@ -812,17 +813,12 @@ module Homebrew
                    .second
         tag ||= formula.stable.specs[:tag]
 
-        begin
-          if @online && (release = GitHub.open_api("#{GitHub::API_URL}/repos/#{owner}/#{repo}/releases/tags/#{tag}"))
-            if release["prerelease"] && (GITHUB_PRERELEASE_ALLOWLIST[formula.name] != formula.version)
-              problem "#{tag} is a GitHub prerelease"
-            elsif release["draft"]
-              problem "#{tag} is a GitHub draft"
-            end
+        if @online && (release = SharedAudits.github_release_data(owner, repo, tag))
+          if release["prerelease"] && (GITHUB_PRERELEASE_ALLOWLIST[formula.name] != formula.version)
+            problem "#{tag} is a GitHub prerelease"
+          elsif release["draft"]
+            problem "#{tag} is a GitHub draft"
           end
-        rescue GitHub::HTTPNotFoundError
-          # No-op if we can't find the release.
-          nil
         end
       end
     end
@@ -890,7 +886,8 @@ module Homebrew
         end
       end
 
-      if previous_version != newest_committed_version &&
+      if (previous_version != newest_committed_version ||
+         current_version != newest_committed_version) &&
          !current_revision.zero? &&
          current_revision == newest_committed_revision &&
          current_revision == previous_revision
@@ -981,11 +978,7 @@ module Homebrew
     end
 
     def head_only?(formula)
-      formula.head && formula.devel.nil? && formula.stable.nil?
-    end
-
-    def devel_only?(formula)
-      formula.devel && formula.stable.nil?
+      formula.head && formula.stable.nil?
     end
   end
 
@@ -1029,8 +1022,8 @@ module Homebrew
     def audit_download_strategy
       url_strategy = DownloadStrategyDetector.detect(url)
 
-      if using == :git || url_strategy == GitDownloadStrategy
-        problem "Git should specify :revision when a :tag is specified." if specs[:tag] && !specs[:revision]
+      if (using == :git || url_strategy == GitDownloadStrategy) && specs[:tag] && !specs[:revision]
+        problem "Git should specify :revision when a :tag is specified."
       end
 
       return unless using

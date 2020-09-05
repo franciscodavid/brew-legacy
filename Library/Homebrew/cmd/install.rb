@@ -54,8 +54,6 @@ module Homebrew
                           "macOS, even if it would not normally be used for installation."
       switch "--include-test",
              description: "Install testing dependencies required to run `brew test` <formula>."
-      switch "--devel",
-             description: "If <formula> defines it, install the development version."
       switch "--HEAD",
              description: "If <formula> defines it, install the HEAD version, aka. master, trunk, unstable."
       switch "--fetch-HEAD",
@@ -133,30 +131,15 @@ module Homebrew
 
     args.named.to_formulae.each do |f|
       # head-only without --HEAD is an error
-      if !args.HEAD? && f.stable.nil? && f.devel.nil?
+      if !args.HEAD? && f.stable.nil?
         raise <<~EOS
           #{f.full_name} is a head-only formula
           Install with `brew install --HEAD #{f.full_name}`
         EOS
       end
 
-      # devel-only without --devel is an error
-      if !args.devel? && f.stable.nil? && f.head.nil?
-        raise <<~EOS
-          #{f.full_name} is a devel-only formula
-          Install with `brew install --devel #{f.full_name}`
-        EOS
-      end
-
-      if !(args.HEAD? || args.devel?) && f.stable.nil?
-        raise "#{f.full_name} has no stable download, please choose --devel or --HEAD"
-      end
-
       # --HEAD, fail with no head defined
       raise "No head is defined for #{f.full_name}" if args.HEAD? && f.head.nil?
-
-      # --devel, fail with no devel defined
-      raise "No devel block is defined for #{f.full_name}" if args.devel? && f.devel.nil?
 
       installed_head_version = f.latest_head_version
       if installed_head_version &&
@@ -219,7 +202,7 @@ module Homebrew
         end
         opoo msg if msg
       elsif !f.any_version_installed? && old_formula = f.old_installed_formulae.first
-        msg = "#{old_formula.full_name} #{old_formula.installed_version} already installed"
+        msg = "#{old_formula.full_name} #{old_formula.any_installed_version} already installed"
         if !old_formula.linked? && !old_formula.keg_only?
           msg = <<~EOS
             #{msg}, it's just not linked.
