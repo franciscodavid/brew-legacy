@@ -3,6 +3,7 @@
 require "formula"
 require "formula_versions"
 require "utils/curl"
+require "utils/github/actions"
 require "utils/shared_audits"
 require "utils/spdx"
 require "extend/ENV"
@@ -142,7 +143,6 @@ module Homebrew
       fa.audit
       next if fa.problems.empty? && fa.new_formula_problems.empty?
 
-      fa.problems
       formula_count += 1
       problem_count += fa.problems.size
       problem_lines = format_problem_lines(fa.problems)
@@ -152,6 +152,15 @@ module Homebrew
         puts problem_lines.map { |s| "#{f.path}: #{s}" }
       else
         puts "#{f.full_name}:", problem_lines.map { |s| "  #{s}" }
+      end
+
+      next unless ENV["GITHUB_ACTIONS"]
+
+      (fa.problems + fa.new_formula_problems).each do |message:, location:|
+        annotation = GitHub::Actions::Annotation.new(
+          :error, message, file: f.path, line: location&.line, column: location&.column
+        )
+        puts annotation if annotation.relevant?
       end
     end
 
@@ -169,7 +178,12 @@ module Homebrew
   end
 
   def format_problem_lines(problems)
-    problems.uniq.map { |p| "* #{p.chomp.gsub("\n", "\n    ")}" }
+    problems.uniq
+            .map { |message:, location:| format_problem(message, location) }
+  end
+
+  def format_problem(message, location)
+    "* #{location&.to_s&.dup&.concat(": ")}#{message.chomp.gsub("\n", "\n    ")}"
   end
 
   class FormulaText
@@ -238,7 +252,12 @@ module Homebrew
       return unless @style_offenses
 
       @style_offenses.each do |offense|
-        problem offense.to_s(display_cop_name: @display_cop_names)
+        correction_status = "#{Tty.green}[Corrected]#{Tty.reset} " if offense.corrected?
+
+        cop_name = "#{offense.cop_name}: " if @display_cop_names
+        message = "#{cop_name}#{correction_status}#{offense.message}"
+
+        problem message, location: offense.location
       end
     end
 
@@ -388,7 +407,7 @@ module Homebrew
           problem <<~EOS
             Formula #{formula.name} contains invalid or deprecated SPDX license exceptions: #{invalid_exceptions}.
             For a list of valid license exceptions check:
-              #{Formatter.url("https://spdx.org/licenses/exceptions-index.html/")}
+              #{Formatter.url("https://spdx.org/licenses/exceptions-index.html")}
           EOS
         end
 
@@ -701,11 +720,6 @@ module Homebrew
       "libepoxy"            => "1.5",
     }.freeze
 
-    GITLAB_PRERELEASE_ALLOWLIST = {}.freeze
-
-    # version_prefix = stable_version_string.sub(/\d+$/, "")
-    # version_prefix = stable.version.major_minor
-
     def audit_specs
       problem "Head-only (no stable download)" if head_only?(formula)
 
@@ -714,15 +728,17 @@ module Homebrew
         next unless spec = formula.send(spec_name)
 
         ra = ResourceAuditor.new(spec, spec_name, online: @online, strict: @strict).audit
-        problems.concat ra.problems.map { |problem| "#{name}: #{problem}" }
+        ra.problems.each do |message|
+          problem "#{name}: #{message}"
+        end
 
         spec.resources.each_value do |resource|
           problem "Resource name should be different from the formula name" if resource.name == formula.name
 
           ra = ResourceAuditor.new(resource, spec_name, online: @online, strict: @strict).audit
-          problems.concat ra.problems.map { |problem|
-            "#{name} resource #{resource.name.inspect}: #{problem}"
-          }
+          ra.problems.each do |message|
+            problem "#{name} resource #{resource.name.inspect}: #{message}"
+          end
         end
 
         next if spec.patches.empty?
@@ -786,21 +802,18 @@ module Homebrew
         owner = Regexp.last_match(1)
         repo = Regexp.last_match(2)
 
-        return unless @online && (release = SharedAudits.gitlab_release_data(owner, repo, stable.version))
+        tag = SharedAudits.gitlab_tag_from_url(url)
+        tag ||= stable.specs[:tag]
+        tag ||= stable.version
 
-        release_date = Date.parse(release["released_at"])
-        if release_date > Date.today && (GITLAB_PRERELEASE_ALLOWLIST[formula.name] != formula.version)
-          problem "#{stable.version} is a GitLab prerelease"
+        if @online
+          error = SharedAudits.gitlab_release(owner, repo, tag, formula: formula)
+          problem error if error
         end
       when %r{^https://github.com/([\w-]+)/([\w-]+)}
         owner = Regexp.last_match(1)
         repo = Regexp.last_match(2)
-        tag = url.match(%r{^https://github\.com/[\w-]+/[\w-]+/archive/([^/]+)\.(tar\.gz|zip)$})
-                 .to_a
-                 .second
-        tag ||= url.match(%r{^https://github\.com/[\w-]+/[\w-]+/releases/download/([^/]+)/})
-                   .to_a
-                   .second
+        tag = SharedAudits.github_tag_from_url(url)
         tag ||= formula.stable.specs[:tag]
 
         if @online
@@ -898,8 +911,9 @@ module Homebrew
 
         bin_names += dir.children.map(&:basename).map(&:to_s)
       end
+      shell_commands = ["system", "shell_output", "pipe_output"]
       bin_names.each do |name|
-        ["system", "shell_output", "pipe_output"].each do |cmd|
+        shell_commands.each do |cmd|
           if text.to_s.match?(/test do.*#{cmd}[(\s]+['"]#{Regexp.escape(name)}[\s'"]/m)
             problem %Q(fully scope test #{cmd} calls, e.g. #{cmd} "\#{bin}/#{name}")
           end
@@ -956,12 +970,12 @@ module Homebrew
 
     private
 
-    def problem(p)
-      @problems << p
+    def problem(message, location: nil)
+      @problems << ({ message: message, location: location })
     end
 
-    def new_formula_problem(p)
-      @new_formula_problems << p
+    def new_formula_problem(message, location: nil)
+      @new_formula_problems << ({ message: message, location: location })
     end
 
     def head_only?(formula)

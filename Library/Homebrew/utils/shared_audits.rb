@@ -29,12 +29,13 @@ module SharedAudits
 
   GITHUB_PRERELEASE_ALLOWLIST = {
     "amd-power-gadget" => :all,
-    "cbmc"             => "5.12.6",
     "elm-format"       => "0.8.3",
     "gitless"          => "0.8.8",
     "infrakit"         => "0.5",
+    "pock"             => :all,
     "riff"             => "0.5.0",
     "telegram-cli"     => "1.3.1",
+    "toggl-track"      => :all,
     "volta"            => "0.8.6",
   }.freeze
 
@@ -74,7 +75,7 @@ module SharedAudits
     @gitlab_release_data ||= {}
     @gitlab_release_data[id] ||= begin
       out, _, status= curl_output(
-        "--request", "GET", "https://gitlab.com/api/v4/projects/#{user}%2F#{repo}/releases/#{tag}"
+        "https://gitlab.com/api/v4/projects/#{user}%2F#{repo}/releases/#{tag}", "--fail"
       )
       return unless status.success?
 
@@ -84,12 +85,31 @@ module SharedAudits
     @gitlab_release_data[id]
   end
 
+  GITLAB_PRERELEASE_ALLOWLIST = {}.freeze
+
+  def gitlab_release(user, repo, tag, formula: nil)
+    release = gitlab_release_data(user, repo, tag)
+    return unless release
+
+    return if Date.parse(release["released_at"]) <= Date.today
+    return if formula && GITLAB_PRERELEASE_ALLOWLIST[formula.name] == formula.version
+
+    "#{tag} is a GitLab pre-release."
+  end
+
+  GITHUB_FORK_ALLOWLIST = %w[
+    variar/klogg
+  ].freeze
+
   def github(user, repo)
     metadata = github_repo_data(user, repo)
 
     return if metadata.nil?
 
-    return "GitHub fork (not canonical repository)" if metadata["fork"]
+    if metadata["fork"] && !GITHUB_FORK_ALLOWLIST.include?("#{user}/#{repo}")
+      return "GitHub fork (not canonical repository)"
+    end
+
     if (metadata["forks_count"] < 30) && (metadata["subscribers_count"] < 30) &&
        (metadata["stargazers_count"] < 75)
       return "GitHub repository not notable enough (<30 forks, <30 watchers and <75 stars)"
@@ -144,5 +164,23 @@ module SharedAudits
     return if (forks_metadata["size"] < 30) && (watcher_metadata["size"] < 75)
 
     "Bitbucket repository not notable enough (<30 forks and <75 watchers)"
+  end
+
+  def github_tag_from_url(url)
+    url = url.to_s
+    tag = url.match(%r{^https://github\.com/[\w-]+/[\w-]+/archive/([^/]+)\.(tar\.gz|zip)$})
+             .to_a
+             .second
+    tag ||= url.match(%r{^https://github\.com/[\w-]+/[\w-]+/releases/download/([^/]+)/})
+               .to_a
+               .second
+    tag
+  end
+
+  def gitlab_tag_from_url(url)
+    url = url.to_s
+    url.match(%r{^https://gitlab\.com/[\w-]+/[\w-]+/-/archive/([^/]+)/})
+       .to_a
+       .second
   end
 end

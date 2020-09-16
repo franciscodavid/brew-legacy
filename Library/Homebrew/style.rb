@@ -15,8 +15,15 @@ module Homebrew
       success = check_style_impl(files, :print, **options)
 
       if ENV["GITHUB_ACTIONS"] && !success
-        offenses = check_style_json(files, **options)
-        puts offenses.to_github_annotations
+        check_style_json(files, **options).each do |path, offenses|
+          offenses.each do |o|
+            line = o.location.line
+            column = o.location.line
+
+            annotation = GitHub::Actions::Annotation.new(:error, o.message, file: path, line: line, column: column)
+            puts annotation if annotation.relevant?
+          end
+        end
       end
 
       success
@@ -126,10 +133,9 @@ module Homebrew
       when :print
         args << "--debug" if debug
 
-        if ENV["CI"]
-          # Don't show the default formatter's progress dots on CI.
-          args << "--format" << "clang"
-        end
+        # Don't show the default formatter's progress dots
+        # on CI or if only checking a single file.
+        args << "--format" << "clang" if ENV["CI"] || files.count { |f| !f.directory? } == 1
 
         args << "--color" if Tty.color?
 
@@ -172,6 +178,7 @@ module Homebrew
         json = json_result!(result)
 
         # Convert to same format as RuboCop offenses.
+        severity_hash = { "style" => "refactor", "info" => "convention" }
         json.group_by { |v| v["file"] }
             .map do |k, v|
           {
@@ -182,7 +189,7 @@ module Homebrew
               o["cop_name"] = "SC#{o.delete("code")}"
 
               level = o.delete("level")
-              o["severity"] = { "style" => "refactor", "info" => "convention" }.fetch(level, level)
+              o["severity"] = severity_hash.fetch(level, level)
 
               line = o.delete("line")
               column = o.delete("column")
@@ -236,26 +243,6 @@ module Homebrew
       def each(*args, &block)
         @offenses.each(*args, &block)
       end
-
-      def to_github_annotations
-        workspace = ENV["GITHUB_WORKSPACE"]
-        return [] if workspace.blank?
-
-        workspace = Pathname(workspace).realpath
-
-        @offenses.flat_map do |path, offenses|
-          relative_path = path.relative_path_from(workspace)
-
-          # Only generate annotations for paths relative to the `GITHUB_WORKSPACE` directory.
-          next [] if relative_path.descend.next.to_s == ".."
-
-          offenses.map do |o|
-            line = o.location.line
-            column = o.location.line
-            GitHub::Actions::Annotation.new(:error, o.message, file: relative_path, line: line, column: column)
-          end
-        end
-      end
     end
 
     # A style offense.
@@ -277,36 +264,18 @@ module Homebrew
       def corrected?
         @corrected
       end
-
-      def correction_status
-        "[Corrected] " if corrected?
-      end
-
-      def to_s(display_cop_name: false)
-        if display_cop_name
-          "#{severity_code}: #{location.to_short_s}: #{cop_name}: " \
-          "#{Tty.green}#{correction_status}#{Tty.reset}#{message}"
-        else
-          "#{severity_code}: #{location.to_short_s}: #{Tty.green}#{correction_status}#{Tty.reset}#{message}"
-        end
-      end
     end
 
     # Source location of a style offense.
     class LineLocation
-      attr_reader :line, :column, :length
+      attr_reader :line, :column
 
       def initialize(json)
         @line = json["line"]
         @column = json["column"]
-        @length = json["length"]
       end
 
       def to_s
-        "#{line}: col #{column} (#{length} chars)"
-      end
-
-      def to_short_s
         "#{line}: col #{column}"
       end
     end

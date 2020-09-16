@@ -8162,6 +8162,8 @@ module Homebrew::EnvConfig
 
   def self.temp(); end
 
+  def self.update_report_only_installed?(); end
+
   def self.update_to_tag?(); end
 
   def self.verbose?(); end
@@ -13112,8 +13114,6 @@ Net::HTTPClientError::EXCEPTION_TYPE = Net::HTTPServerException
 
 Net::HTTPClientErrorCode = Net::HTTPClientError
 
-Net::HTTPClientException = Net::HTTPServerException
-
 class Net::HTTPEarlyHints
   HAS_BODY = ::T.let(nil, ::T.untyped)
 end
@@ -13372,6 +13372,7 @@ class Object
   HOMEBREW_PRODUCT = ::T.let(nil, ::T.untyped)
   HOMEBREW_PULL_API_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_PULL_OR_COMMIT_URL_REGEX = ::T.let(nil, ::T.untyped)
+  HOMEBREW_RELEASES_URL_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_REPOSITORY = ::T.let(nil, ::T.untyped)
   HOMEBREW_REQUIRED_RUBY_VERSION = ::T.let(nil, ::T.untyped)
   HOMEBREW_SHIMS_PATH = ::T.let(nil, ::T.untyped)
@@ -19557,6 +19558,8 @@ module RSpec::Matchers
 
   def a_string_containing(*args, &block); end
 
+  def array_including_cons(*expected, &block_arg); end
+
   def be_a_failure(*args, &block); end
 
   def have_failed(*args, &block); end
@@ -20079,13 +20082,9 @@ end
 module RuboCop::AST::CollectionNode
   def extract_options!(*args, &block); end
 
-  def save_plist(*args, &block); end
-
   def to_default_s(*args, &block); end
 
   def to_formatted_s(*args, &block); end
-
-  def to_plist(*args, &block); end
 
   def to_sentence(*args, &block); end
 
@@ -20104,10 +20103,6 @@ class RuboCop::AST::Node
   def method_node(node=T.unsafe(nil)); end
 
   def val_node(node=T.unsafe(nil)); end
-end
-
-class RuboCop::AST::RegexpNode
-  include ::RuboCop::Ext::RegexpNode
 end
 
 class RuboCop::Cask::AST::CaskBlock

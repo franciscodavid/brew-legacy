@@ -26,11 +26,12 @@
 - [Python](Homebrew-and-Python.md)
 - [How To Build Software Outside Homebrew With Homebrew `keg_only` dependencies](How-to-Build-Software-Outside-Homebrew-with-Homebrew-keg-only-Dependencies.md)
 - [Xcode](Xcode.md)
-- [Kickstarter Supporters](Kickstarter-Supporters.md)
 
 - [Creating a Homebrew Issue](Creating-a-Homebrew-Issue.md)
 - [Updating Software in Homebrew](Updating-Software-in-Homebrew.md)
 - [Adding Software to Homebrew](Adding-Software-to-Homebrew.md)
+
+- [Kickstarter Supporters](Kickstarter-Supporters.md)
 
 ## Contributors
 
@@ -46,6 +47,7 @@
 - [Building Against Non-Homebrew Dependencies](Building-Against-Non-Homebrew-Dependencies.md)
 - [How To Create (And Maintain) A Tap](How-to-Create-and-Maintain-a-Tap.md)
 - [Brew Test Bot](Brew-Test-Bot.md)
+- [Diagram Guidelines](Diagram-Guidelines.md)
 - [Prose Style Guidelines](Prose-Style-Guidelines.md)
 - [Type Checking with Sorbet](Typechecking.md)
 
