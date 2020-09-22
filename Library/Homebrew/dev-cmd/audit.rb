@@ -566,7 +566,11 @@ module Homebrew
     end
 
     CERT_ERROR_ALLOWLIST = {
-      "monero" => "https://www.getmonero.org/",
+      "hashcat"     => "https://hashcat.net/hashcat/",
+      "jinx"        => "https://www.jinx-lang.org/",
+      "lmod"        => "https://www.tacc.utexas.edu/research-development/tacc-projects/lmod",
+      "micropython" => "https://www.micropython.org/",
+      "monero"      => "https://www.getmonero.org/",
     }.freeze
 
     def audit_homepage
@@ -712,6 +716,11 @@ module Homebrew
       "vbindiff"        => "3.0_beta",
     }.freeze
 
+    # used for formulae that are unstable but need CI run without being in homebrew/core
+    UNSTABLE_DEVEL_ALLOWLIST = {
+      "python@3.9" => "3.9.0rc",
+    }.freeze
+
     GNOME_DEVEL_ALLOWLIST = {
       "libart"              => "2.3",
       "gtk-mac-integration" => "2.1",
@@ -784,6 +793,7 @@ module Homebrew
         matched = Regexp.last_match(1)
         version_prefix = stable_version_string.sub(/\d+$/, "")
         return if UNSTABLE_ALLOWLIST[formula.name] == version_prefix
+        return if UNSTABLE_DEVEL_ALLOWLIST[formula.name] == version_prefix
 
         problem "Stable version URLs should not contain #{matched}"
       when %r{download\.gnome\.org/sources}, %r{ftp\.gnome\.org/pub/GNOME/sources}i

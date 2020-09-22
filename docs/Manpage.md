@@ -834,6 +834,8 @@ supplied by the user.
   When passed with `--write`, generate a new commit after writing changes to the cask file.
 * `--no-audit`:
   Don't run `brew cask audit` before opening the PR.
+* `--online`:
+  Run `brew cask audit --online` before opening the PR.
 * `--no-style`:
   Don't run `brew cask style --fix` before opening the PR.
 * `--no-browse`:
@@ -880,6 +882,8 @@ nor vice versa. It must use whichever style specification the formula already us
   Don't run `brew audit` before opening the PR.
 * `--strict`:
   Run `brew audit --strict` before opening the PR.
+* `--online`:
+  Run `brew audit --online` before opening the PR.
 * `--no-browse`:
   Print the pull request URL instead of opening in a browser.
 * `--no-fork`:
@@ -1030,15 +1034,17 @@ or `~/.brew_livecheck_watchlist`.
 * `--full-name`:
   Print formulae with fully-qualified names.
 * `--tap`:
-  Check the formulae within the given tap, specified as *`user`*`/`*`repo`*.
-* `--installed`:
-  Check formulae that are currently installed.
-* `--json`:
-  Output informations in JSON format.
+  Check formulae within the given tap, specified as *`user`*`/`*`repo`*.
 * `--all`:
   Check all available formulae.
+* `--installed`:
+  Check formulae that are currently installed.
 * `--newer-only`:
   Show the latest version only if it's newer than the formula.
+* `--json`:
+  Output information in JSON format.
+* `-q`, `--quiet`:
+  Suppress warnings, don't print a progress bar for JSON output.
 
 ### `man` [*`options`*]
 
@@ -1092,12 +1098,16 @@ Requires write access to the repository.
   Do not amend the commits from pull requests.
 * `--keep-old`:
   If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL.
+* `--autosquash`:
+  Automatically reformat and reword commits in the pull request to our preferred format.
 * `--branch-okay`:
-  Do not warn if pulling to a branch besides master (useful for testing).
+  Do not warn if pulling to a branch besides the repository default (useful for testing).
 * `--resolve`:
   When a patch fails to apply, leave in progress and allow user to resolve, instead of aborting.
 * `--warn-on-upload-failure`:
   Warn instead of raising an error if the bottle upload fails. Useful for repairing bottle uploads that previously failed.
+* `--message`:
+  Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--workflow`:
   Retrieve artifacts from the specified workflow (default: `tests.yml`).
 * `--artifact`:
@@ -1234,8 +1244,8 @@ Check for typechecking errors using Sorbet.
 
 * `-q`, `--quiet`:
   Silence all non-critical errors.
-* `--update-definitions`:
-  Update Tapioca gem definitions of recently bumped gems
+* `--update`:
+  Update RBI files and prune sorbet/files.yaml
 * `--fail-if-not-changed`:
   Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update
 * `--dir`:
