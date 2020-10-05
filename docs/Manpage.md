@@ -1119,6 +1119,10 @@ Find pull requests that can be automatically merged using `brew pr-publish`.
 Publish bottles for a pull request with GitHub Actions.
 Requires write access to the repository.
 
+* `--autosquash`:
+  If supported on the target tap, automatically reformat and reword commits in the pull request to our preferred format.
+* `--message`:
+  Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--tap`:
   Target tap repository (default: `homebrew/core`).
 * `--workflow`:
@@ -1173,6 +1177,8 @@ Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
   If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL.
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
+* `--no-commit`:
+  Do not generate a new commit before uploading.
 * `--warn-on-upload-failure`:
   Warn instead of raising an error if the bottle upload fails. Useful for repairing bottle uploads that previously failed.
 * `--bintray-org`:
@@ -1240,9 +1246,14 @@ including core code and all formulae.
 * `--except-cops`:
   Specify a comma-separated *`cops`* list to skip checking for violations of the listed RuboCop cops.
 
-### `tap-new` *`user`*`/`*`repo`*
+### `tap-new` [*`options`*] *`user`*`/`*`repo`*
 
 Generate the template files for a new tap.
+
+* `--no-git`:
+  Don't initialize a git repository for the tap.
+* `--pull-label`:
+  Label name for pull requests ready to be pulled (default `pr-pull`).
 
 ### `test` [*`options`*] *`formula`*
 
@@ -1411,6 +1422,8 @@ This sanitized build environment ignores unrequested dependencies, which makes s
   `install` won't run `brew upgrade` on outdated dependencies. Note they may still be upgraded by `brew install` if needed.
 * `-f`, `--force`:
   `dump` overwrites an existing `Brewfile`. `cleanup` actually performs its cleanup operations.
+* `--cleanup`:
+  `install` performs cleanup operation, same as running `cleanup --force`.
 * `--no-lock`:
   `install` won't output a `Brewfile.lock.json`.
 * `--all`:
@@ -1670,7 +1683,7 @@ For example, you might add something like the following to your ~/.profile, ~/.b
     If set, always use Homebrew's vendored, relocatable Ruby version even if the system version of Ruby is new enough.
 
   * `HOMEBREW_GITHUB_API_PASSWORD`:
-    Use this password for authentication with the GitHub API, for features such as `brew search`. We strongly recommend using `HOMEBREW_GITHUB_API_TOKEN` instead.
+    Use this password for authentication with the GitHub API, for features such as `brew search`. This is deprecated in favour of using `HOMEBREW_GITHUB_API_TOKEN`.
 
   * `HOMEBREW_GITHUB_API_TOKEN`:
     Use this personal access token for the GitHub API, for features such as `brew search`. You can create one at <https://github.com/settings/tokens>. If set, GitHub will allow you a greater number of API requests. For more information, see: <https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting>.
@@ -1678,7 +1691,7 @@ For example, you might add something like the following to your ~/.profile, ~/.b
     *Note:* Homebrew doesn't require permissions for any of the scopes, but some developer commands may require additional permissions.
 
   * `HOMEBREW_GITHUB_API_USERNAME`:
-    Use this username for authentication with the GitHub API, for features such as `brew search`. We strongly recommend using `HOMEBREW_GITHUB_API_TOKEN` instead.
+    Use this username for authentication with the GitHub API, for features such as `brew search`. This is deprecated in favour of using `HOMEBREW_GITHUB_API_TOKEN`.
 
   * `HOMEBREW_GIT_EMAIL`:
     Set the Git author and committer name to this value.
