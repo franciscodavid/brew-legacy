@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "delegate"
+
 require "requirements/macos_requirement"
 
 module Cask
@@ -7,7 +9,7 @@ module Cask
     # Class corresponding to the `depends_on` stanza.
     #
     # @api private
-    class DependsOn < DelegateClass(Hash)
+    class DependsOn < SimpleDelegator
       VALID_KEYS = Set.new([
                              :formula,
                              :cask,
@@ -63,8 +65,8 @@ module Cask
           else
             MacOSRequirement.new([args.first], comparator: "==")
           end
-        rescue MacOSVersionError
-          raise "invalid 'depends_on macos' value: #{args.first.inspect}"
+        rescue MacOSVersionError => e
+          raise "invalid 'depends_on macos' value: #{e}"
         end
       end
 
