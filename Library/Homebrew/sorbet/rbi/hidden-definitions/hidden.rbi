@@ -13312,6 +13312,8 @@ class Object
   include ::ActiveSupport::Dependencies::Loadable
   include ::ActiveSupport::Tryable
   include ::Minitest::Expectations
+  include ::SystemCommand::Mixin
+  include ::Utils::Curl
   include ::ActiveSupport::ToJsonWithActiveSupportEncoder
   def acts_like?(duck); end
 
@@ -22357,16 +22359,10 @@ class RuboCop::AST::NodePattern::Parser
 end
 
 module RuboCop::AST::NodePattern::Sets
-  SET_ABSTRACT_OVERRIDE_OVERRIDABLE_ETC = ::T.let(nil, ::T.untyped)
-  SET_ANY_ALL_NORETURN_ETC = ::T.let(nil, ::T.untyped)
-  SET_ATTR_READER_ATTR_WRITER_ATTR_ACCESSOR = ::T.let(nil, ::T.untyped)
   SET_BUILD_RECOMMENDED_TEST_OPTIONAL = ::T.let(nil, ::T.untyped)
-  SET_CONSTANTIZE_CONSTANTS_CONST_GET = ::T.let(nil, ::T.untyped)
   SET_DEPENDS_ON_USES_FROM_MACOS = ::T.let(nil, ::T.untyped)
   SET_INCLUDE_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
-  SET_PROP_CONST = ::T.let(nil, ::T.untyped)
   SET_SYSTEM_SHELL_OUTPUT_PIPE_OUTPUT = ::T.let(nil, ::T.untyped)
-  SET_TYPE_TEMPLATE_TYPE_MEMBER = ::T.let(nil, ::T.untyped)
   SET_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
 end
 
@@ -24691,6 +24687,11 @@ class String
   ENCODED_BLANKS = ::T.let(nil, ::T.untyped)
 end
 
+class StringInreplaceExtension
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
 class StringScanner
   def bol?(); end
 
@@ -26038,6 +26039,7 @@ class TrueClass
 end
 
 module Tty
+  extend ::T::Private::Methods::SingletonMethodHooks
   def self.blue(); end
 
   def self.bold(); end
@@ -26202,6 +26204,11 @@ class UnpackStrategy::Zip
   include ::UnpackStrategy::Zip::MacOSZipExtension
 end
 
+class User
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
 class Utils::Bottles::Collector
   def [](*args, &block); end
 
@@ -26212,6 +26219,20 @@ class Utils::Bottles::Collector
   def key?(*args, &block); end
 
   def keys(*args, &block); end
+end
+
+module Utils::Inreplace
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
+module Utils::Shell
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
+module Utils::Svn
+  extend ::T::Private::Methods::SingletonMethodHooks
 end
 
 module Warning

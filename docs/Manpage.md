@@ -364,9 +364,9 @@ If *`formula`* is provided, summarise the paths within its current keg.
 * `--pinned`:
   Show the versions of pinned formulae, or only the specified (pinned) formulae if *`formula`* are provided. See also `pin`, `unpin`.
 * `--formula`:
-  List only formulae.
+  List only formulae. `This is the default action on non TTY.`
 * `--cask`:
-  List only casks.
+  List only casks, or *`cask`* if provided.
 * `-1`:
   Force output to be one entry per line. This is the default when output is not to a terminal.
 * `-l`:
@@ -515,6 +515,8 @@ No online search is performed.
   Without *`text`*, list all locally available casks (including tapped ones, no online search is performed). With *`text`*, search online and locally for casks.
 * `--desc`:
   Search for formulae with a description matching *`text`* and casks with a name matching *`text`*.
+* `--pull-request`:
+  Search for GitHub pull requests for *`text`*.
 * `--macports`:
   Search for *`text`* in the given package manager's list.
 * `--fink`:
@@ -968,6 +970,21 @@ a simple example. For the complete API, see:
 * `-f`, `--force`:
   Ignore errors for disallowed formula names and named that shadow aliases.
 
+### `dispatch-build-bottle` [*`options`*] *`formula`* [*`formula`* ...]
+
+Build bottles for these formulae with GitHub Actions.
+
+* `--tap`:
+  Target tap repository (default: `homebrew/core`).
+* `--issue`:
+  If specified, post a comment to this issue number if the job fails.
+* `--macos`:
+  Version of macOS the bottle should be built for.
+* `--workflow`:
+  Dispatch specified workflow (default: `dispatch-build-bottle.yml`).
+* `--upload`:
+  Upload built bottles to Bintray.
+
 ### `diy` [*`options`*]
 
 Automatically determine the installation prefix for non-Homebrew software.
@@ -1066,11 +1083,13 @@ Find pull requests that can be automatically merged using `brew pr-publish`.
 * `--with-label`:
   Pull requests must have this label.
 * `--without-labels`:
-  Pull requests must not have these labels (default: `do not merge`, `new formula`).
+  Pull requests must not have these labels (default: `do not merge`, `new formula`, `automerge-skip`).
 * `--without-approval`:
   Pull requests do not require approval to be merged.
 * `--publish`:
   Run `brew pr-publish` on matching pull requests.
+* `--autosquash`:
+  Instruct `brew pr-publish` to automatically reformat and reword commits in the pull request to our preferred format.
 * `--ignore-failures`:
   Include pull requests that have failing status checks.
 
@@ -1214,6 +1233,8 @@ Generate the template files for a new tap.
   Don't initialize a git repository for the tap.
 * `--pull-label`:
   Label name for pull requests ready to be pulled (default `pr-pull`).
+* `--branch`:
+  Initialize git repository with the specified branch name (default `main`).
 
 ### `test` [*`options`*] *`formula`*
 
@@ -1258,9 +1279,9 @@ Check for typechecking errors using Sorbet.
 * `-q`, `--quiet`:
   Silence all non-critical errors.
 * `--update`:
-  Update RBI files and prune sorbet/files.yaml
+  Update RBI files.
 * `--fail-if-not-changed`:
-  Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update
+  Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update.
 * `--dir`:
   Typecheck all files in a specific directory.
 * `--file`:
