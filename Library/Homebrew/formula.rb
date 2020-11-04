@@ -414,12 +414,12 @@ class Formula
     name.include?("@")
   end
 
-  # Returns any `@`-versioned formulae for an non-`@`-versioned formula.
+  # Returns any `@`-versioned formulae for any formula (including versioned formulae).
   def versioned_formulae
-    return [] if versioned_formula?
+    Pathname.glob(path.to_s.gsub(/(@[\d.]+)?\.rb$/, "@*.rb")).map do |versioned_path|
+      next if versioned_path == path
 
-    Pathname.glob(path.to_s.gsub(/\.rb$/, "@*.rb")).map do |path|
-      Formula[path.basename(".rb").to_s]
+      Formula[versioned_path.basename(".rb").to_s]
     rescue FormulaUnavailableError
       nil
     end.compact.sort_by(&:version).reverse
@@ -1366,6 +1366,22 @@ class Formula
     "#<Formula #{name} (#{active_spec_sym}) #{path}>"
   end
 
+  # Block only executed on macOS. No-op on Linux.
+  # <pre>on_macos do
+  #   Do something mac specific
+  # end</pre>
+  def on_macos(&_block)
+    raise "No block content defined for on_macos block" unless block_given?
+  end
+
+  # Block only executed on Linux. No-op on macOS.
+  # <pre>on_linux do
+  #   Do something linux specific
+  # end</pre>
+  def on_linux(&_block)
+    raise "No block content defined for on_linux block" unless block_given?
+  end
+
   # Standard parameters for cargo builds.
   def std_cargo_args
     ["--locked", "--root", prefix, "--path", "."]
@@ -1772,7 +1788,7 @@ class Formula
         "name"     => req.name,
         "cask"     => req.cask,
         "download" => req.download,
-        "version"  => req.try(:version),
+        "version"  => req.try(:version) || req.try(:arch),
         "contexts" => req.tags,
       }
     end
@@ -2512,13 +2528,17 @@ class Formula
     # <pre>on_macos do
     #   depends_on "mac_only_dep"
     # end</pre>
-    def on_macos(&_block); end
+    def on_macos(&_block)
+      raise "No block content defined for on_macos block" unless block_given?
+    end
 
     # Block only executed on Linux. No-op on macOS.
     # <pre>on_linux do
     #   depends_on "linux_only_dep"
     # end</pre>
-    def on_linux(&_block); end
+    def on_linux(&_block)
+      raise "No block content defined for on_linux block" unless block_given?
+    end
 
     # @!attribute [w] option
     # Options can be used as arguments to `brew install`.

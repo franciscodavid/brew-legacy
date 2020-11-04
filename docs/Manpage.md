@@ -353,28 +353,28 @@ List all installed formulae or casks
 
 If *`formula`* is provided, summarise the paths within its current keg.
 
-* `--full-name`:
-  Print formulae with fully-qualified names. If `--full-name` is not passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output.
+* `--formula`:
+  List only formulae. `This is the default action on non TTY.`
+* `--cask`:
+  List only casks, or *`cask`* if provided.
 * `--unbrewed`:
   List files in Homebrew's prefix not installed by Homebrew.
+* `--full-name`:
+  Print formulae with fully-qualified names. If `--full-name` is not passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output.
 * `--versions`:
   Show the version number for installed formulae, or only the specified formulae if *`formula`* are provided.
 * `--multiple`:
   Only show formulae with multiple versions installed.
 * `--pinned`:
   Show the versions of pinned formulae, or only the specified (pinned) formulae if *`formula`* are provided. See also `pin`, `unpin`.
-* `--formula`:
-  List only formulae. `This is the default action on non TTY.`
-* `--cask`:
-  List only casks, or *`cask`* if provided.
 * `-1`:
   Force output to be one entry per line. This is the default when output is not to a terminal.
 * `-l`:
-  List in long format. If the output is to a terminal, a total sum for all the file sizes is printed before the long listing.
+  List formulae in long format. If the output is to a terminal, a total sum for all the file sizes is printed before the long listing.
 * `-r`:
-  Reverse the order of the sort to list the oldest entries first.
+  Reverse the order of the formulae sort to list the oldest entries first.
 * `-t`:
-  Sort by time modified, listing most recently modified first.
+  Sort formulae by time modified, listing most recently modified first.
 
 ### `log` [*`options`*] [*`formula`*]
 
@@ -536,10 +536,6 @@ Print export statements. When run in a shell, this installation of Homebrew will
 
 The variables `HOMEBREW_PREFIX`, `HOMEBREW_CELLAR` and `HOMEBREW_REPOSITORY` are also exported to avoid querying them multiple times.
 Consider adding evaluation of this command's output to your dotfiles (e.g. `~/.profile`, `~/.bash_profile`, or `~/.zprofile`) with: `eval $(brew shellenv)`
-
-### `switch` *`formula`* *`version`*
-
-Symlink all of the specified *`version`* of *`formula`*'s installation into Homebrew's prefix.
 
 ### `tap` [*`options`*] [*`user`*`/`*`repo`*] [*`URL`*]
 
