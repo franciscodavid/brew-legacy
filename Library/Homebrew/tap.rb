@@ -6,15 +6,25 @@ require "extend/cachable"
 require "description_cache_store"
 
 # A {Tap} is used to extend the formulae provided by Homebrew core.
-# Usually, it's synced with a remote git repository. And it's likely
+# Usually, it's synced with a remote Git repository. And it's likely
 # a GitHub repository with the name of `user/homebrew-repo`. In such
-# case, `user/repo` will be used as the {#name} of this {Tap}, where
-# {#user} represents GitHub username and {#repo} represents repository
-# name without leading `homebrew-`.
+# cases, `user/repo` will be used as the {#name} of this {Tap}, where
+# {#user} represents the GitHub username and {#repo} represents the repository
+# name without the leading `homebrew-`.
 class Tap
   extend Cachable
 
   TAP_DIRECTORY = (HOMEBREW_LIBRARY/"Taps").freeze
+
+  HOMEBREW_TAP_FORMULA_RENAMES_FILE = "formula_renames.json"
+  HOMEBREW_TAP_MIGRATIONS_FILE = "tap_migrations.json"
+  HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR = "audit_exceptions"
+
+  HOMEBREW_TAP_JSON_FILES = %W[
+    #{HOMEBREW_TAP_FORMULA_RENAMES_FILE}
+    #{HOMEBREW_TAP_MIGRATIONS_FILE}
+    #{HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR}/*.json
+  ].freeze
 
   def self.fetch(*args)
     case args.length
@@ -54,7 +64,7 @@ class Tap
   # this {Tap}'s remote repository.
   attr_reader :user
 
-  # The repository name of this {Tap} without leading `homebrew-`.
+  # The repository name of this {Tap} without the leading `homebrew-`.
   attr_reader :repo
 
   # The name of this {Tap}. It combines {#user} and {#repo} with a slash.
@@ -83,7 +93,7 @@ class Tap
     @alias_reverse_table = nil
   end
 
-  # Clear internal cache
+  # Clear internal cache.
   def clear_cache
     @remote = nil
     @repo_var = nil
@@ -99,6 +109,7 @@ class Tap
     @command_files = nil
     @formula_renames = nil
     @tap_migrations = nil
+    @audit_exceptions = nil
     @config = nil
     remove_instance_variable(:@private) if instance_variable_defined?(:@private)
   end
@@ -123,7 +134,7 @@ class Tap
                       .upcase
   end
 
-  # True if this {Tap} is a git repository.
+  # True if this {Tap} is a Git repository.
   def git?
     path.git?
   end
@@ -149,14 +160,14 @@ class Tap
     path.git_short_head
   end
 
-  # Time since git last commit for this {Tap}.
+  # Time since last git commit for this {Tap}.
   def git_last_commit
     raise TapUnavailableError, name unless installed?
 
     path.git_last_commit
   end
 
-  # git last commit date for this {Tap}.
+  # Last git commit date for this {Tap}.
   def git_last_commit_date
     raise TapUnavailableError, name unless installed?
 
@@ -196,7 +207,7 @@ class Tap
     @private = read_or_set_private_config
   end
 
-  # {TapConfig} of this {Tap}
+  # {TapConfig} of this {Tap}.
   def config
     @config ||= begin
       raise TapUnavailableError, name unless installed?
@@ -523,26 +534,42 @@ class Tap
     hash
   end
 
-  # Hash with tap formula renames
+  # Hash with tap formula renames.
   def formula_renames
-    require "json"
-
-    @formula_renames ||= if (rename_file = path/"formula_renames.json").file?
+    @formula_renames ||= if (rename_file = path/HOMEBREW_TAP_FORMULA_RENAMES_FILE).file?
       JSON.parse(rename_file.read)
     else
       {}
     end
   end
 
-  # Hash with tap migrations
+  # Hash with tap migrations.
   def tap_migrations
-    require "json"
-
-    @tap_migrations ||= if (migration_file = path/"tap_migrations.json").file?
+    @tap_migrations ||= if (migration_file = path/HOMEBREW_TAP_MIGRATIONS_FILE).file?
       JSON.parse(migration_file.read)
     else
       {}
     end
+  end
+
+  # Hash with audit exceptions
+  def audit_exceptions
+    @audit_exceptions = {}
+
+    Pathname.glob(path/HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR/"*").each do |exception_file|
+      list_name = exception_file.basename.to_s.chomp(".json").to_sym
+      list_contents = begin
+        JSON.parse exception_file.read
+      rescue JSON::ParserError
+        opoo "#{exception_file} contains invalid JSON"
+      end
+
+      next if list_contents.nil?
+
+      @audit_exceptions[list_name] = list_contents
+    end
+
+    @audit_exceptions
   end
 
   def ==(other)
@@ -567,7 +594,7 @@ class Tap
     map(&:name).sort
   end
 
-  # An array of all tap cmd directory {Pathname}s
+  # An array of all tap cmd directory {Pathname}s.
   def self.cmd_directories
     Pathname.glob TAP_DIRECTORY/"*/*/cmd"
   end
@@ -684,6 +711,14 @@ class CoreTap < Tap
   # @private
   def tap_migrations
     @tap_migrations ||= begin
+      self.class.ensure_installed!
+      super
+    end
+  end
+
+  # @private
+  def audit_exceptions
+    @audit_exceptions ||= begin
       self.class.ensure_installed!
       super
     end

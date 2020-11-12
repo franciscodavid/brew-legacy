@@ -11,14 +11,19 @@ module Cask
     #
     # The return value of the last method in the block is also sent
     # to the output by the caller, but that feature is only for the
-    # convenience of Cask authors.
+    # convenience of cask authors.
     #
     # @api private
     class Caveats < Base
+      extend Predicable
+
+      attr_predicate :discontinued?
+
       def initialize(*args)
         super(*args)
         @built_in_caveats = {}
         @custom_caveats = []
+        @discontinued = false
       end
 
       def self.caveat(name, &block)
@@ -135,6 +140,7 @@ module Cask
       end
 
       caveat :discontinued do
+        @discontinued = true
         <<~EOS
           #{@cask} has been officially discontinued upstream.
           It may stop working correctly (or at all) in recent versions of macOS.

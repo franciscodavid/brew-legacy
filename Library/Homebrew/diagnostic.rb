@@ -52,7 +52,7 @@ module Homebrew
         @verbose = verbose
       end
 
-      ############# HELPERS
+      ############# @!group HELPERS
       # Finds files in `HOMEBREW_PREFIX` *and* /usr/local.
       # Specify paths relative to a prefix, e.g. "include/foo.h".
       # Sets @found for your convenience.
@@ -78,7 +78,7 @@ module Homebrew
       def add_info(*args)
         ohai(*args) if @verbose
       end
-      ############# END HELPERS
+      ############# @!endgroup END HELPERS
 
       def fatal_preinstall_checks
         %w[
@@ -758,14 +758,14 @@ module Homebrew
 
       def check_for_unlinked_but_not_keg_only
         unlinked = Formula.racks.reject do |rack|
-          if !(HOMEBREW_LINKED_KEGS/rack.basename).directory?
+          if (HOMEBREW_LINKED_KEGS/rack.basename).directory?
+            true
+          else
             begin
               Formulary.from_rack(rack).keg_only?
             rescue FormulaUnavailableError, TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
               false
             end
-          else
-            true
           end
         end.map(&:basename)
         return if unlinked.empty?
@@ -851,7 +851,8 @@ module Homebrew
         return if deleted_formulae.blank?
 
         <<~EOS
-          Some installed formulae were deleted!
+          Some installed kegs have no formulae!
+          This means they were either deleted or installed with `brew diy`.
           You should find replacements for the following formulae:
             #{deleted_formulae.join("\n  ")}
         EOS

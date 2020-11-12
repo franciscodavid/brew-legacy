@@ -80,6 +80,7 @@ module Cask
                             :url,
                             :version,
                             :appdir,
+                            :discontinued?,
                             *ORDINARY_ARTIFACT_CLASSES.map(&:dsl_key),
                             *ACTIVATABLE_ARTIFACT_CLASSES.map(&:dsl_key),
                             *ARTIFACT_BLOCK_CLASSES.flat_map { |klass| [klass.dsl_key, klass.uninstall_dsl_key] },
@@ -141,9 +142,9 @@ module Cask
     end
 
     def language_eval
-      return @language if defined?(@language)
+      return @language_eval if defined?(@language_eval)
 
-      return @language = nil if @language_blocks.nil? || @language_blocks.empty?
+      return @language_eval = nil if @language_blocks.nil? || @language_blocks.empty?
 
       raise CaskInvalidError.new(cask, "No default language specified.") if @language_blocks.default.nil?
 
@@ -160,10 +161,10 @@ module Cask
 
         next if key.nil?
 
-        return @language = @language_blocks[key].call
+        return @language_eval = @language_blocks[key].call
       end
 
-      @language = @language_blocks.default.call
+      @language_eval = @language_blocks.default.call
     end
 
     def languages
@@ -212,7 +213,7 @@ module Cask
       end
     end
 
-    # depends_on uses a load method so that multiple stanzas can be merged
+    # `depends_on` uses a load method so that multiple stanzas can be merged.
     def depends_on(*args)
       @depends_on ||= DSL::DependsOn.new
       return @depends_on if args.empty?
@@ -259,6 +260,10 @@ module Cask
       @caveats
     end
 
+    def discontinued?
+      @caveats&.discontinued?
+    end
+
     def auto_updates(auto_updates = nil)
       set_unique_stanza(:auto_updates, auto_updates.nil?) { auto_updates }
     end
@@ -286,7 +291,7 @@ module Cask
       end
     end
 
-    # No need to define it as its the default/superclass implementation.
+    # No need to define it as it's the default/superclass implementation.
     # rubocop:disable Style/MissingRespondToMissing
     def method_missing(method, *)
       if method

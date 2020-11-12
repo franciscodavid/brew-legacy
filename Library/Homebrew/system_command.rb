@@ -15,7 +15,7 @@ using HashValidator
 #
 # @api private
 class SystemCommand
-  # Helper functions for calling `SystemCommand.run`.
+  # Helper functions for calling {SystemCommand.run}.
   module Mixin
     def system_command(*args)
       SystemCommand.run(*args)
@@ -100,12 +100,11 @@ class SystemCommand
   end
 
   def env_args
-    set_variables = env.reject { |_, value| value.nil? }
-                       .map do |name, value|
-                         sanitized_name = Shellwords.escape(name)
-                         sanitized_value = Shellwords.escape(value)
-                         "#{sanitized_name}=#{sanitized_value}"
-                       end
+    set_variables = env.compact.map do |name, value|
+      sanitized_name = Shellwords.escape(name)
+      sanitized_value = Shellwords.escape(value)
+      "#{sanitized_name}=#{sanitized_value}"
+    end
 
     return [] if set_variables.empty?
 

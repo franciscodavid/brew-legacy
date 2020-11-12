@@ -113,9 +113,7 @@ module Homebrew
       updated = true
     end
 
-    if !updated
-      puts "Already up-to-date." if !args.preinstall? && !ENV["HOMEBREW_UPDATE_FAILED"]
-    else
+    if updated
       if hub.empty?
         puts "No changes to formulae."
       else
@@ -128,6 +126,8 @@ module Homebrew
         end
       end
       puts if args.preinstall?
+    elsif !args.preinstall? && !ENV["HOMEBREW_UPDATE_FAILED"]
+      puts "Already up-to-date."
     end
 
     Commands.rebuild_commands_completion_list
@@ -311,7 +311,7 @@ class Reporter
         name
       end
 
-      # This means it is a Cask
+      # This means it is a cask
       if report[:DC].include? full_name
         next unless (HOMEBREW_PREFIX/"Caskroom"/new_name).exist?
 

@@ -111,14 +111,18 @@ module Homebrew
     new_formula = begin
       Formulary.from_contents(formula_name, formula_path, new_contents, :stable)
     rescue FormulaUnavailableError
-      return "#{formula_name}: delete #{reason}".strip
+      nil
     end
+
+    return "#{formula_name}: delete #{reason}".strip if new_formula.blank?
 
     old_formula = begin
       Formulary.from_contents(formula_name, formula_path, old_contents, :stable)
     rescue FormulaUnavailableError
-      return "#{formula_name} #{new_formula.stable.version} (new formula)"
+      nil
     end
+
+    return "#{formula_name} #{new_formula.stable.version} (new formula)" if old_formula.blank?
 
     if old_formula.stable.version != new_formula.stable.version
       "#{formula_name} #{new_formula.stable.version}"
@@ -130,7 +134,7 @@ module Homebrew
   end
 
   # Cherry picks a single commit that modifies a single file.
-  # Potentially rewords this commit using `determine_bump_subject`.
+  # Potentially rewords this commit using {determine_bump_subject}.
   def reword_formula_commit(commit, file, reason: "", verbose: false, resolve: false, path: ".")
     formula_file = Pathname.new(path) / file
     formula_name = formula_file.basename.to_s.chomp(".rb")
@@ -154,7 +158,7 @@ module Homebrew
   end
 
   # Cherry picks multiple commits that each modify a single file.
-  # Words the commit according to `determine_bump_subject` with the body
+  # Words the commit according to {determine_bump_subject} with the body
   # corresponding to all the original commit messages combined.
   def squash_formula_commits(commits, file, reason: "", verbose: false, resolve: false, path: ".")
     odebug "Squashing #{file}: #{commits.join " "}"

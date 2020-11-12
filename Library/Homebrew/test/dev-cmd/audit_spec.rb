@@ -685,6 +685,23 @@ module Homebrew
           it { is_expected.to match("stable sha256 changed without the version also changing") }
         end
 
+        context "should not change with the same version when not the first commit" do
+          before do
+            formula_gsub_origin_commit(
+              'sha256 "31cccfc6630528db1c8e3a06f6decf2a370060b982841cfab2b8677400a5092e"',
+              'sha256 "3622d2a53236ed9ca62de0616a7e80fd477a9a3f862ba09d503da188f53ca523"',
+            )
+            formula_gsub_origin_commit "revision 2"
+            formula_gsub_origin_commit "foo-1.0.tar.gz", "foo-1.1.tar.gz"
+            formula_gsub(
+              'sha256 "3622d2a53236ed9ca62de0616a7e80fd477a9a3f862ba09d503da188f53ca523"',
+              'sha256 "e048c5e6144f5932d8672c2fade81d9073d5b3ca1517b84df006de3d25414fc1"',
+            )
+          end
+
+          it { is_expected.to match("stable sha256 changed without the version also changing") }
+        end
+
         context "can change with the different version" do
           before do
             formula_gsub_origin_commit(
@@ -746,6 +763,17 @@ module Homebrew
           it { is_expected.to be_nil }
         end
 
+        context "should not warn when revision from previous version matches current revision" do
+          before do
+            formula_gsub_origin_commit "foo-1.0.tar.gz", "foo-1.1.tar.gz"
+            formula_gsub_origin_commit "revision 2", "# no revision"
+            formula_gsub_origin_commit "# no revision", "revision 1"
+            formula_gsub_origin_commit "revision 1", "revision 2"
+          end
+
+          it { is_expected.to be_nil }
+        end
+
         context "should only increment by 1 with an uncommitted version" do
           before do
             formula_gsub "foo-1.0.tar.gz", "foo-1.1.tar.gz"
@@ -776,8 +804,8 @@ module Homebrew
         context "should not decrease with a new version" do
           before do
             formula_gsub_origin_commit "foo-1.0.tar.gz", "foo-1.1.tar.gz"
-            formula_gsub_origin_commit "version_scheme 1", ""
             formula_gsub_origin_commit "revision 2", ""
+            formula_gsub_origin_commit "version_scheme 1", ""
           end
 
           it { is_expected.to match("version_scheme should not decrease (from 1 to 0)") }
@@ -868,9 +896,7 @@ module Homebrew
     end
 
     include_examples "formulae exist", described_class::VERSIONED_KEG_ONLY_ALLOWLIST
-    include_examples "formulae exist", described_class::VERSIONED_HEAD_SPEC_ALLOWLIST
     include_examples "formulae exist", described_class::PROVIDED_BY_MACOS_DEPENDS_ON_ALLOWLIST
-    include_examples "formulae exist", described_class::THROTTLED_FORMULAE.keys
     include_examples "formulae exist", described_class::UNSTABLE_ALLOWLIST.keys
     include_examples "formulae exist", described_class::GNOME_DEVEL_ALLOWLIST.keys
   end
