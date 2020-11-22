@@ -32,11 +32,11 @@ module SharedAudits
   end
 
   GITHUB_PRERELEASE_ALLOWLIST = {
-    "amd-power-gadget" => :all,
     "elm-format"       => "0.8.3",
     "extraterm"        => :all,
     "freetube"         => :all,
     "gitless"          => "0.8.8",
+    "haptickey"        => :all,
     "home-assistant"   => :all,
     "lidarr"           => :all,
     "nuclear"          => :all,

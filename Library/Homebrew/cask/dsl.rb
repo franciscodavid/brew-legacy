@@ -125,7 +125,7 @@ module Cask
     def language(*args, default: false, &block)
       if args.empty?
         language_eval
-      elsif block_given?
+      elsif block
         @language_blocks ||= {}
         @language_blocks[args] = block
 
@@ -205,11 +205,14 @@ module Cask
 
     def sha256(arg = nil)
       set_unique_stanza(:sha256, arg.nil?) do
-        if !arg.is_a?(String) && arg != :no_check
+        case arg
+        when :no_check
+          arg
+        when String
+          Checksum.new(:sha256, arg)
+        else
           raise CaskInvalidError.new(cask, "invalid 'sha256' value: '#{arg.inspect}'")
         end
-
-        arg
       end
     end
 
@@ -248,7 +251,7 @@ module Cask
 
     def caveats(*strings, &block)
       @caveats ||= DSL::Caveats.new(cask)
-      if block_given?
+      if block
         @caveats.eval_caveats(&block)
       elsif strings.any?
         strings.each do |string|

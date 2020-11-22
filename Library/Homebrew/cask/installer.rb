@@ -8,7 +8,6 @@ require "cask/topological_hash"
 require "cask/config"
 require "cask/download"
 require "cask/staged"
-require "cask/verify"
 require "cask/quarantine"
 
 require "cgi"
@@ -18,6 +17,8 @@ module Cask
   #
   # @api private
   class Installer
+    extend T::Sig
+
     extend Predicable
     # TODO: it is unwise for Cask::Staged to be a module, when we are
     #       dealing with both staged and unstaged casks here. This should
@@ -66,7 +67,6 @@ module Cask
       satisfy_dependencies
 
       download
-      verify
     end
 
     def stage
@@ -142,6 +142,7 @@ module Cask
       Installer.new(installed_cask, binaries: binaries?, verbose: verbose?, force: true, upgrade: upgrade?).uninstall
     end
 
+    sig { returns(String) }
     def summary
       s = +""
       s << "#{Homebrew::EnvConfig.install_badge}  " unless Homebrew::EnvConfig.no_emoji?
@@ -153,7 +154,7 @@ module Cask
       return @downloaded_path if @downloaded_path
 
       odebug "Downloading"
-      @downloaded_path = Download.new(@cask, force: false, quarantine: quarantine?).perform
+      @downloaded_path = Download.new(@cask, quarantine: quarantine?).fetch
       odebug "Downloaded to -> #{@downloaded_path}"
       @downloaded_path
     end
@@ -162,11 +163,10 @@ module Cask
       odebug "Checking cask has checksum"
       return unless @cask.sha256 == :no_check
 
-      raise CaskNoShasumError, @cask.token
-    end
-
-    def verify
-      Verify.all(@cask, @downloaded_path)
+      raise CaskError, <<~EOS
+        Cask '#{@cask}' does not have a sha256 checksum defined and was not installed.
+        This means you have the #{Formatter.identifier("--require-sha")} option set, perhaps in your HOMEBREW_CASK_OPTS.
+      EOS
     end
 
     def primary_container
@@ -368,15 +368,19 @@ module Cask
             force:                   false,
           ).install
         else
-          FormulaInstaller.new(cask_or_formula, verbose: verbose?).yield_self do |fi|
-            fi.installed_as_dependency = true
-            fi.installed_on_request = false
-            fi.show_header = true
-            fi.prelude
-            fi.fetch
-            fi.install
-            fi.finish
-          end
+          fi = FormulaInstaller.new(
+            cask_or_formula,
+            **{
+              show_header:             true,
+              installed_as_dependency: true,
+              installed_on_request:    false,
+              verbose:                 verbose?,
+            }.compact,
+          )
+          fi.prelude
+          fi.fetch
+          fi.install
+          fi.finish
         end
       end
     end

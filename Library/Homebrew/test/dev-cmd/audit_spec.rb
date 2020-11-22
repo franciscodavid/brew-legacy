@@ -18,7 +18,7 @@ module Count
 end
 
 module Homebrew
-  describe FormulaText do
+  describe FormulaTextAuditor do
     alias_matcher :have_data, :be_data
     alias_matcher :have_end, :be_end
     alias_matcher :have_trailing_newline, :be_trailing_newline
@@ -423,6 +423,23 @@ module Homebrew
           .to eq 'Formula license ["0BSD"] does not match GitHub license ["GPL-3.0"].'
       end
 
+      it "allows a formula-specified license that differs from its GitHub "\
+         "repository for formulae on the mismatched license allowlist" do
+        formula_text = <<~RUBY
+          class Cask < Formula
+            url "https://github.com/cask/cask/archive/v0.8.4.tar.gz"
+            head "https://github.com/cask/cask.git"
+            license "0BSD"
+          end
+        RUBY
+        fa = formula_auditor "cask", formula_text, spdx_license_data: spdx_license_data,
+                             online: true, core_tap: true, new_formula: true,
+                             tap_audit_exceptions: { permitted_formula_license_mismatches: ["cask"] }
+
+        fa.audit_license
+        expect(fa.problems).to be_empty
+      end
+
       it "checks online and detects that an array of license does not contain "\
         "what is indicated on its Github repository" do
         formula_text = <<~RUBY
@@ -539,6 +556,91 @@ module Homebrew
         RUBY
 
         fa.audit_bitbucket_repository
+        expect(fa.problems).to be_empty
+      end
+    end
+
+    describe "#audit_specs" do
+      let(:throttle_list) { { throttled_formulae: { "foo" => 10 } } }
+      let(:versioned_head_spec_list) { { versioned_head_spec_allowlist: ["foo"] } }
+
+      it "allows versions with no throttle rate" do
+        fa = formula_auditor "bar", <<~RUBY, core_tap: true, tap_audit_exceptions: throttle_list
+          class Bar < Formula
+            url "https://brew.sh/foo-1.0.1.tgz"
+          end
+        RUBY
+
+        fa.audit_specs
+        expect(fa.problems).to be_empty
+      end
+
+      it "allows major/minor versions with throttle rate" do
+        fa = formula_auditor "foo", <<~RUBY, core_tap: true, tap_audit_exceptions: throttle_list
+          class Foo < Formula
+            url "https://brew.sh/foo-1.0.0.tgz"
+          end
+        RUBY
+
+        fa.audit_specs
+        expect(fa.problems).to be_empty
+      end
+
+      it "allows patch versions to be multiples of the throttle rate" do
+        fa = formula_auditor "foo", <<~RUBY, core_tap: true, tap_audit_exceptions: throttle_list
+          class Foo < Formula
+            url "https://brew.sh/foo-1.0.10.tgz"
+          end
+        RUBY
+
+        fa.audit_specs
+        expect(fa.problems).to be_empty
+      end
+
+      it "doesn't allow patch versions that aren't multiples of the throttle rate" do
+        fa = formula_auditor "foo", <<~RUBY, core_tap: true, tap_audit_exceptions: throttle_list
+          class Foo < Formula
+            url "https://brew.sh/foo-1.0.1.tgz"
+          end
+        RUBY
+
+        fa.audit_specs
+        expect(fa.problems.first[:message]).to match "should only be updated every 10 releases on multiples of 10"
+      end
+
+      it "allows non-versioned formulae to have a `HEAD` spec" do
+        fa = formula_auditor "bar", <<~RUBY, core_tap: true, tap_audit_exceptions: versioned_head_spec_list
+          class Bar < Formula
+            url "https://brew.sh/foo-1.0.tgz"
+            head "https://brew.sh/foo-1.0.tgz"
+          end
+        RUBY
+
+        fa.audit_specs
+        expect(fa.problems).to be_empty
+      end
+
+      it "doesn't allow versioned formulae to have a `HEAD` spec" do
+        fa = formula_auditor "bar@1", <<~RUBY, core_tap: true, tap_audit_exceptions: versioned_head_spec_list
+          class BarAT1 < Formula
+            url "https://brew.sh/foo-1.0.tgz"
+            head "https://brew.sh/foo-1.0.tgz"
+          end
+        RUBY
+
+        fa.audit_specs
+        expect(fa.problems.first[:message]).to match "Versioned formulae should not have a `HEAD` spec"
+      end
+
+      it "allows ersioned formulae on the allowlist to have a `HEAD` spec" do
+        fa = formula_auditor "foo", <<~RUBY, core_tap: true, tap_audit_exceptions: versioned_head_spec_list
+          class Foo < Formula
+            url "https://brew.sh/foo-1.0.tgz"
+            head "https://brew.sh/foo-1.0.tgz"
+          end
+        RUBY
+
+        fa.audit_specs
         expect(fa.problems).to be_empty
       end
     end
@@ -682,7 +784,7 @@ module Homebrew
             )
           end
 
-          it { is_expected.to match("stable sha256 changed without the version also changing") }
+          it { is_expected.to match("stable sha256 changed without the url/version also changing") }
         end
 
         context "should not change with the same version when not the first commit" do
@@ -699,7 +801,7 @@ module Homebrew
             )
           end
 
-          it { is_expected.to match("stable sha256 changed without the version also changing") }
+          it { is_expected.to match("stable sha256 changed without the url/version also changing") }
         end
 
         context "can change with the different version" do
@@ -713,6 +815,19 @@ module Homebrew
               'sha256 "3622d2a53236ed9ca62de0616a7e80fd477a9a3f862ba09d503da188f53ca523"',
               'sha256 "e048c5e6144f5932d8672c2fade81d9073d5b3ca1517b84df006de3d25414fc1"',
             )
+          end
+
+          it { is_expected.to be_nil }
+        end
+
+        context "can be removed when switching schemes" do
+          before do
+            formula_gsub_origin_commit(
+              'url "https://brew.sh/foo-1.0.tar.gz"',
+              'url "https://foo.com/brew/bar.git", tag: "1.0", revision: "f5e00e485e7aa4c5baa20355b27e3b84a6912790"',
+            )
+            formula_gsub_origin_commit('sha256 "31cccfc6630528db1c8e3a06f6decf2a370060b982841cfab2b8677400a5092e"',
+                                       "")
           end
 
           it { is_expected.to be_nil }
