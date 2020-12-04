@@ -372,21 +372,44 @@ EOS
   if [[ -n "$HOMEBREW_FORCE_BREWED_CURL" &&
       ! -x "$HOMEBREW_PREFIX/opt/curl/bin/curl" ]]
   then
-    brew install curl
+    # we cannot install a Homebrew cURL if homebrew/core is unavailable.
+    if [[ ! -d "$HOMEBREW_LIBRARY/Taps/homebrew/homebrew-core" ]] || ! brew install curl
+    then
+      odie "Curl must be installed and in your PATH!"
+    fi
   fi
 
   if ! git --version &>/dev/null ||
      [[ -n "$HOMEBREW_FORCE_BREWED_GIT" &&
       ! -x "$HOMEBREW_PREFIX/opt/git/bin/git" ]]
   then
-    # we cannot install brewed git if homebrew/core is unavailable.
-    [[ -d "$HOMEBREW_LIBRARY/Taps/homebrew/homebrew-core" ]] && brew install git
-    unset GIT_EXECUTABLE
-    if ! git --version &>/dev/null
+    # we cannot install a Homebrew Git if homebrew/core is unavailable.
+    if [[ ! -d "$HOMEBREW_LIBRARY/Taps/homebrew/homebrew-core" ]] || ! brew install git
     then
       odie "Git must be installed and in your PATH!"
     fi
   fi
+
+  # Homebrew/homebrew-core is extremely expensive to perform shallow clones on
+  # so, on GitHub's request, don't allow it.
+  if [[ -f "$HOMEBREW_LIBRARY/Taps/homebrew/homebrew-core/.git/shallow" ]]
+  then
+    odie <<EOS
+homebrew-core is a shallow clone. To \`brew update\` first run:
+  git -C "$HOMEBREW_LIBRARY/Taps/homebrew/homebrew-core" fetch --unshallow
+EOS
+  fi
+
+  # Homebrew/homebrew-cask is also extremely expensive to perform shallow clones
+  # on so, on GitHub's request, don't allow it.
+  if [[ -f "$HOMEBREW_LIBRARY/Taps/homebrew/homebrew-cask/.git/shallow" ]]
+  then
+    odie <<EOS
+homebrew-cask is a shallow clone. To \`brew update\` first run:
+  git -C "$HOMEBREW_LIBRARY/Taps/homebrew/homebrew-cask" fetch --unshallow
+EOS
+  fi
+
   export GIT_TERMINAL_PROMPT="0"
   export GIT_SSH_COMMAND="ssh -oBatchMode=yes"
 

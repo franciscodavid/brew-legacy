@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "cli/parser"
@@ -45,6 +45,7 @@ module Homebrew
     end
   end
 
+  sig { void }
   def tap
     args = tap_args.parse
 

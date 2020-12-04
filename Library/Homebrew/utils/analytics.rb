@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "context"
 require "erb"
 
 module Utils
@@ -57,7 +58,7 @@ module Utils
                  "--silent", "--output", "/dev/null",
                  "https://www.google-analytics.com/collect"
           end
-          Process.detach pid
+          Process.detach T.must(pid)
         end
       end
 

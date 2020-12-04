@@ -80,7 +80,11 @@ RSpec.configure do |config|
   if ENV["CI"]
     config.verbose_retry = true
     config.display_try_failure_messages = true
-    config.default_retry_count = 2
+
+    config.around(:each, :integration_test) do |example|
+      example.metadata[:timeout] ||= 120
+      example.run
+    end
 
     config.around(:each, :needs_network) do |example|
       example.metadata[:timeout] ||= 120
@@ -238,6 +242,10 @@ RSpec.configure do |config|
         CoreTap.instance.path/".git",
         CoreTap.instance.alias_dir,
         CoreTap.instance.path/"formula_renames.json",
+        CoreTap.instance.path/"tap_migrations.json",
+        CoreTap.instance.path/"audit_exceptions",
+        CoreTap.instance.path/"style_exceptions",
+        CoreTap.instance.path/"pypi_formula_mappings.json",
         *Pathname.glob("#{HOMEBREW_CELLAR}/*/"),
       ]
 

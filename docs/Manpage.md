@@ -65,47 +65,6 @@ Uninstall formulae that were only installed as a dependency of another formula a
 * `-n`, `--dry-run`:
   List what would be uninstalled, but do not actually uninstall anything.
 
-### `cask` *`command`* [*`options`*] [*`cask`*]
-
-Homebrew Cask provides a friendly CLI workflow for the administration of macOS applications distributed as binaries.
-
-Commands:
-
-- `audit`
-  <br>Check *`cask`* for Homebrew coding style violations.
-
-- `cat`
-  <br>Dump raw source of a *`cask`* to the standard output.
-
-- `create`
-  <br>Creates the given *`cask`* and opens it in an editor.
-
-- `edit`
-  <br>Open the given *`cask`* for editing.
-
-- `fetch`
-  <br>Downloads remote application files to local cache.
-
-- `help`
-  <br>Print help for `cask` commands.
-
-- `info`
-  <br>Displays information about the given *`cask`*.
-
-- `install`
-  <br>Installs the given *`cask`*.
-
-- `style`
-  <br>Checks style of the given *`cask`* using RuboCop.
-
-- `uninstall`
-  <br>Uninstalls the given *`cask`*.
-
-- `zap`
-  <br>Zaps all files associated with the given *`cask`*.
-
-See also: `man brew`
-
 ### `cleanup` [*`options`*] [*`formula`*|*`cask`*]
 
 Remove stale lock files and outdated downloads for all formulae and casks,
@@ -170,6 +129,10 @@ show the intersection of dependencies for each formula.
   List dependencies for all available formulae.
 * `--for-each`:
   Switch into the mode used by the `--all` option, but only list dependencies for each provided *`formula`*, one formula per line. This is used for debugging the `--installed`/`--all` display mode.
+* `--formula`:
+  Treat all named arguments as formulae.
+* `--cask`:
+  Treat all named arguments as casks.
 
 ### `desc` [*`options`*] (*`text`*|`/`*`text`*`/`|*`formula`*)
 
@@ -243,10 +206,10 @@ error message if no logs are found.
 * `-p`, `--private`:
   The Gist will be marked private and will not appear in listings but will be accessible with its link.
 
-### `home` [*`formula`*]
+### `home` [*`formula`*|*`cask`*]
 
-Open *`formula`*'s homepage in a browser, or open Homebrew's own homepage
-if no formula is provided.
+Open a *`formula`* or *`cask`*'s homepage in a browser, or open
+Homebrew's own homepage if no argument is provided.
 
 ### `info` [*`options`*] [*`formula`*|*`cask`*]
 
@@ -263,7 +226,7 @@ If a *`formula`* or *`cask`* is provided, show summary of information about it.
 * `--github`:
   Open the GitHub source page for *`formula`* in a browser. To view formula history locally: `brew log -p` *`formula`*
 * `--json`:
-  Print a JSON representation of *`formula`*. Currently the default and only accepted value for *`version`* is `v1`. See the docs for examples of using the JSON output: <https://docs.brew.sh/Querying-Brew>
+  Print a JSON representation. Currently the default value for *`version`* is `v1` for *`formula`*. For *`formula`* and *`cask`* use `v2`. See the docs for examples of using the JSON output: <https://docs.brew.sh/Querying-Brew>
 * `--installed`:
   Print JSON of formulae that are currently installed.
 * `--all`:
@@ -354,21 +317,20 @@ installations.
 List all installed formulae and casks.
 
 If *`formula`* is provided, summarise the paths within its current keg.
+If *`cask`* is provided, list its artifacts.
 
 * `--formula`:
-  List only formulae. This is the default when output is not to a terminal.
+  List only formulae, or treat all named arguments as formulae.
 * `--cask`:
-  List only casks, or *`cask`* if provided.
-* `--unbrewed`:
-  List files in Homebrew's prefix not installed by Homebrew.
+  List only casks, or treat all named arguments as casks.
 * `--full-name`:
-  Print formulae with fully-qualified names. If `--full-name` is not passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output.
+  Print formulae with fully-qualified names. Unless `--full-name`, `--versions` or `--pinned` are passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output.
 * `--versions`:
   Show the version number for installed formulae, or only the specified formulae if *`formula`* are provided.
 * `--multiple`:
   Only show formulae with multiple versions installed.
 * `--pinned`:
-  Show the versions of pinned formulae, or only the specified (pinned) formulae if *`formula`* are provided. See also `pin`, `unpin`.
+  List only pinned formulae, or only the specified (pinned) formulae if *`formula`* are provided. See also `pin`, `unpin`.
 * `-1`:
   Force output to be one entry per line. This is the default when output is not to a terminal.
 * `-l`:
@@ -737,11 +699,17 @@ the list is formatted for export to `bash`(1) unless `--plain` is passed.
 
 ### `--prefix` [*`formula`*]
 
-Display Homebrew's install path. *Default:* `/usr/local` on macOS and
-`/home/linuxbrew/.linuxbrew` on Linux.
+Display Homebrew's install path. *Default:*
+
+  - macOS Intel: `/usr/local`
+  - macOS ARM: `/opt/homebrew`
+  - Linux: `/home/linuxbrew/.linuxbrew`
 
 If *`formula`* is provided, display the location in the Cellar where *`formula`*
 is or would be installed.
+
+* `--unbrewed`:
+  List files in Homebrew's prefix not installed by Homebrew.
 
 ### `--repository`, `--repo` [*`user`*`/`*`repo`*]
 
@@ -849,11 +817,11 @@ supplied by the user.
 * `--commit`:
   When passed with `--write`, generate a new commit after writing changes to the cask file.
 * `--no-audit`:
-  Don't run `brew cask audit` before opening the PR.
+  Don't run `brew audit` before opening the PR.
 * `--online`:
-  Run `brew cask audit --online` before opening the PR.
+  Run `brew audit --online` before opening the PR.
 * `--no-style`:
-  Don't run `brew cask style --fix` before opening the PR.
+  Don't run `brew style --fix` before opening the PR.
 * `--no-browse`:
   Print the pull request URL instead of opening in a browser.
 * `--no-fork`:
@@ -946,14 +914,16 @@ Display the path to the file being used when invoking `brew` *`cmd`*.
 
 ### `create` [*`options`*] *`URL`*
 
-Generate a formula for the downloadable file at *`URL`* and open it in the editor.
-Homebrew will attempt to automatically derive the formula name and version, but
-if it fails, you'll have to make your own template. The `wget` formula serves as
-a simple example. For the complete API, see:
+Generate a formula or, with `--cask`, a cask for the downloadable file at *`URL`*
+and open it in the editor. Homebrew will attempt to automatically derive the
+formula name and version, but if it fails, you'll have to make your own template.
+The `wget` formula serves as a simple example. For the complete API, see:
 <https://rubydoc.brew.sh/Formula>
 
 * `--autotools`:
   Create a basic template for an Autotools-style build.
+* `--cask`:
+  Create a basic template for a cask.
 * `--cmake`:
   Create a basic template for a CMake-style build.
 * `--crystal`:
@@ -977,9 +947,9 @@ a simple example. For the complete API, see:
 * `--HEAD`:
   Indicate that *`URL`* points to the package's repository rather than a file.
 * `--set-name`:
-  Explicitly set the *`name`* of the new formula.
+  Explicitly set the *`name`* of the new formula or cask.
 * `--set-version`:
-  Explicitly set the *`version`* of the new formula.
+  Explicitly set the *`version`* of the new formula or cask.
 * `--set-license`:
   Explicitly set the *`license`* of the new formula.
 * `--tap`:
@@ -1001,17 +971,6 @@ Build bottles for these formulae with GitHub Actions.
   Dispatch specified workflow (default: `dispatch-build-bottle.yml`).
 * `--upload`:
   Upload built bottles to Bintray.
-
-### `diy` [*`options`*]
-
-Automatically determine the installation prefix for non-Homebrew software.
-Using the output from this command, you can install your own software into
-the Cellar and then link it into Homebrew's prefix with `brew link`.
-
-* `--name`:
-  Explicitly set the *`name`* of the package being installed.
-* `--version`:
-  Explicitly set the *`version`* of the package being installed.
 
 ### `edit` [*`formula`*|*`cask`*]
 
@@ -1096,6 +1055,17 @@ Generate Homebrew's manpages.
 * `--link`:
   This is now done automatically by `brew update`.
 
+### `mirror` *`formula`*
+
+Reupload the stable URL of a formula to Bintray for use as a mirror.
+
+* `--bintray-org`:
+  Upload to the specified Bintray organisation (default: `homebrew`).
+* `--bintray-repo`:
+  Upload to the specified Bintray repository (default: `mirror`).
+* `--no-publish`:
+  Upload to Bintray, but don't publish.
+
 ### `pr-automerge` [*`options`*]
 
 Find pull requests that can be automatically merged using `brew pr-publish`.
@@ -1156,7 +1126,7 @@ Requires write access to the repository.
 * `--message`:
   Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--workflow`:
-  Retrieve artifacts from the specified workflow (default: `tests.yml`).
+  Retrieve artifacts from the specified workflow (default: `tests.yml`). Legacy: use --workflows instead
 * `--artifact`:
   Download artifacts with the specified name (default: `bottles`).
 * `--bintray-org`:
@@ -1167,6 +1137,10 @@ Requires write access to the repository.
   Use the specified *`URL`* as the root of the bottle's URL instead of Homebrew's default.
 * `--bintray-mirror`:
   Use the specified Bintray repository to automatically mirror stable URLs defined in the formulae (default: `mirror`).
+* `--workflows`:
+  Retrieve artifacts from the specified workflow (default: `tests.yml`) Comma-separated list to include multiple workflows.
+* `--ignore-missing-artifacts`:
+  Comma-separated list of workflows which can be ignored if they have not been run.
 
 ### `pr-upload` [*`options`*]
 
@@ -1242,6 +1216,8 @@ including core code and all formulae.
   Fix style violations automatically using RuboCop's auto-correct feature.
 * `--display-cop-names`:
   Include the RuboCop cop name for each violation in the output.
+* `--reset-cache`:
+  Reset the RuboCop cache.
 * `--only-cops`:
   Specify a comma-separated *`cops`* list to check for violations of only the listed RuboCop cops.
 * `--except-cops`:
@@ -1304,6 +1280,8 @@ Check for typechecking errors using Sorbet.
   Silence all non-critical errors.
 * `--update`:
   Update RBI files.
+* `--suggest-typed`:
+  Try upgrading `typed` sigils.
 * `--fail-if-not-changed`:
   Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update.
 * `--dir`:
@@ -1312,6 +1290,17 @@ Check for typechecking errors using Sorbet.
   Typecheck a single file.
 * `--ignore`:
   Ignores input files that contain the given string in their paths (relative to the input path passed to Sorbet).
+
+### `unbottled` [*`formula`*]
+
+Outputs the unbottled dependents of formulae.
+
+* `--tag`:
+  Use the specified bottle tag (e.g. big_sur) instead of the current OS.
+* `--dependents`:
+  Don't get analytics data and sort by number of dependents instead.
+* `--total`:
+  Output the number of unbottled and total formulae.
 
 ### `unpack` [*`options`*] *`formula`*
 
@@ -1346,6 +1335,12 @@ Update versions for PyPI resource blocks in *`formula`*.
   Don't fail if *`formula`* is not a PyPI package.
 * `--version`:
   Use the specified *`version`* when finding resources for *`formula`*. If no version is specified, the current version for *`formula`* will be used.
+* `--package-name`:
+  Use the specified *`package-name`* when finding resources for *`formula`*. If no package name is specified, it will be inferred from the formula's stable URL.
+* `--extra-packages`:
+  Include these additional packages when finding resources.
+* `--exclude-packages`:
+  Exclude these packages when finding resources.
 
 ### `update-test` [*`options`*]
 

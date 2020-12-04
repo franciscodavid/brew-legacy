@@ -25,7 +25,7 @@ module OS
     # This can be compared to numerics, strings, or symbols
     # using the standard Ruby Comparable methods.
     def version
-      @version ||= Version.new(full_version.to_s[/^\d+\.\d+/])
+      @version ||= Version.from_symbol(full_version.to_sym)
     end
 
     # This can be compared to numerics, strings, or symbols
@@ -39,16 +39,16 @@ module OS
       @version = nil
     end
 
+    sig { returns(::Version) }
     def latest_sdk_version
       # TODO: bump version when new Xcode macOS SDK is released
-      Version.new "11.0"
+      ::Version.new("11.0")
     end
+    private :latest_sdk_version
 
-    def latest_stable_version
-      # TODO: bump version when new macOS is released and also update
-      # references in docs/Installation.md and
-      # https://github.com/Homebrew/install/blob/HEAD/install.sh
-      Version.new "11.0"
+    sig { returns(::Version) }
+    def sdk_version
+      full_version.major_minor
     end
 
     def outdated_release?
@@ -59,7 +59,10 @@ module OS
     end
 
     def prerelease?
-      version > latest_stable_version
+      # TODO: bump version when new macOS is released or announced
+      # and also update references in docs/Installation.md and
+      # https://github.com/Homebrew/install/blob/HEAD/install.sh
+      version >= "12"
     end
 
     def languages
@@ -182,7 +185,7 @@ module OS
       path = mdfind(*ids)
              .reject { |p| p.include?("/Backups.backupdb/") }
              .first
-      Pathname.new(path) unless path.nil? || path.empty?
+      Pathname.new(path) if path.present?
     end
 
     def mdfind(*ids)

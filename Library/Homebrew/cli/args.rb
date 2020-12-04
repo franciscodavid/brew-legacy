@@ -1,7 +1,6 @@
 # typed: true
 # frozen_string_literal: true
 
-require "cli/named_args"
 require "ostruct"
 
 module Homebrew
@@ -16,6 +15,8 @@ module Homebrew
 
       sig { void }
       def initialize
+        require "cli/named_args"
+
         super()
 
         @processed_options = []
@@ -55,6 +56,7 @@ module Homebrew
 
       sig { returns(NamedArgs) }
       def named
+        require "formula"
         self[:named]
       end
 
@@ -63,48 +65,39 @@ module Homebrew
       end
 
       def formulae
-        odeprecated "args.formulae", "args.named.to_formulae"
-        named.to_formulae
+        odisabled "args.formulae", "args.named.to_formulae"
       end
 
       def formulae_and_casks
-        odeprecated "args.formulae_and_casks", "args.named.to_formulae_and_casks"
-        named.to_formulae_and_casks
+        odisabled "args.formulae_and_casks", "args.named.to_formulae_and_casks"
       end
 
       def resolved_formulae
-        odeprecated "args.resolved_formulae", "args.named.to_resolved_formulae"
-        named.to_resolved_formulae
+        odisabled "args.resolved_formulae", "args.named.to_resolved_formulae"
       end
 
       def resolved_formulae_casks
-        odeprecated "args.resolved_formulae_casks", "args.named.to_resolved_formulae_to_casks"
-        named.to_resolved_formulae_to_casks
+        odisabled "args.resolved_formulae_casks", "args.named.to_resolved_formulae_to_casks"
       end
 
       def formulae_paths
-        odeprecated "args.formulae_paths", "args.named.to_formulae_paths"
-        named.to_formulae_paths
+        odisabled "args.formulae_paths", "args.named.to_formulae_paths"
       end
 
       def casks
-        odeprecated "args.casks", "args.named.homebrew_tap_cask_names"
-        named.homebrew_tap_cask_names
+        odisabled "args.casks", "args.named.homebrew_tap_cask_names"
       end
 
       def loaded_casks
-        odeprecated "args.loaded_casks", "args.named.to_cask"
-        named.to_casks
+        odisabled "args.loaded_casks", "args.named.to_cask"
       end
 
       def kegs
-        odeprecated "args.kegs", "args.named.to_kegs"
-        named.to_kegs
+        odisabled "args.kegs", "args.named.to_kegs"
       end
 
       def kegs_casks
-        odeprecated "args.kegs", "args.named.to_kegs_to_casks"
-        named.to_kegs_to_casks
+        odisabled "args.kegs", "args.named.to_kegs_to_casks"
       end
 
       def build_stable?
