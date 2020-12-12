@@ -35,13 +35,25 @@ module Homebrew
   def dispatch_build_bottle
     args = dispatch_build_bottle_args.parse
 
+    # Fixup version for ARM/Apple Silicon
+    # TODO: fix label name to be 11-arm64 instead and remove this.
+    args.macos&.gsub!(/^11-arm$/, "11-arm64")
+
     macos = args.macos&.yield_self do |s|
       MacOS::Version.from_symbol(s.to_sym)
     rescue MacOSVersionError
       MacOS::Version.new(s)
     end
 
-    raise UsageError, "Must specify --macos option" unless macos
+    raise UsageError, "Must specify --macos option" if macos.blank?
+
+    # Fixup label for ARM/Apple Silicon
+    macos_label = if macos.arch == :arm64
+      # TODO: fix label name to be 11-arm64 instead.
+      "#{macos}-arm"
+    else
+      macos.to_s
+    end
 
     tap = Tap.fetch(args.tap || CoreTap.instance.name)
     user, repo = tap.full_name.split("/")
@@ -53,7 +65,7 @@ module Homebrew
       # Required inputs
       inputs = {
         formula: formula.name,
-        macos:   macos.to_s,
+        macos:   macos_label,
       }
 
       # Optional inputs

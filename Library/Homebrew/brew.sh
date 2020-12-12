@@ -341,7 +341,9 @@ then
 
   # Set a variable when the macOS system Ruby is new enough to avoid spawning
   # a Ruby process unnecessarily.
-  if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "101500" ]]
+  # On Catalina the system Ruby is technically new enough but don't allow it:
+  # https://github.com/Homebrew/brew/issues/9410
+  if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "101600" ]]
   then
     unset HOMEBREW_MACOS_SYSTEM_RUBY_NEW_ENOUGH
   else
@@ -453,6 +455,7 @@ export HOMEBREW_MACOS_VERSION_NUMERIC
 export HOMEBREW_USER_AGENT
 export HOMEBREW_USER_AGENT_CURL
 export HOMEBREW_BOTTLE_DEFAULT_DOMAIN
+export HOMEBREW_MACOS_SYSTEM_RUBY_NEW_ENOUGH
 
 if [[ -n "$HOMEBREW_MACOS" && -x "/usr/bin/xcode-select" ]]
 then

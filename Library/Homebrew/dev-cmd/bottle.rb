@@ -436,9 +436,15 @@ module Homebrew
     end
   end
 
-  def merge(args:)
-    bottles_hash = args.named.reduce({}) do |hash, json_file|
-      hash.deep_merge(JSON.parse(IO.read(json_file))) do |key, first, second|
+  def parse_json_files(filenames)
+    filenames.map do |filename|
+      JSON.parse(IO.read(filename))
+    end
+  end
+
+  def merge_json_files(json_files)
+    json_files.reduce({}) do |hash, json_file|
+      hash.deep_merge(json_file) do |key, first, second|
         if key == "cellar"
           # Prioritize HOMEBREW_CELLAR over :any over :any_skip_relocation
           cellars = [first, second]
@@ -452,6 +458,10 @@ module Homebrew
         second
       end
     end
+  end
+
+  def merge(args:)
+    bottles_hash = merge_json_files(parse_json_files(args.named))
 
     any_cellars = ["any", "any_skip_relocation"]
     bottles_hash.each do |formula_name, bottle_hash|
@@ -526,27 +536,7 @@ module Homebrew
             odie "--keep-old was passed but there was no existing bottle block!" if args.keep_old?
             puts output
             update_or_add = "add"
-            pattern = /(
-                (\ {2}\#[^\n]*\n)*                                                # comments
-                \ {2}(                                                            # two spaces at the beginning
-                  (url|head)\ ['"][\S\ ]+['"]                                     # url or head with a string
-                  (
-                    ,[\S\ ]*$                                                     # url may have options
-                    (\n^\ {3}[\S\ ]+$)*                                           # options can be in multiple lines
-                  )?|
-                  (homepage|desc|sha256|version|mirror|license)\ ['"][\S\ ]+['"]| # specs with a string
-                  license\ (
-                    [^\[]+?\[[^\]]+?\]|                                           # license may contain a list
-                    [^{]+?{[^}]+?}|                                               # license may contain a hash
-                    :\S+                                                          # license as a symbol
-                  )|
-                  (revision|version_scheme)\ \d+|                                 # revision with a number
-                  (stable|livecheck)\ do(\n+^\ {4}[\S\ ]+$)*\n+^\ {2}end          # components with blocks
-                )\n+                                                              # multiple empty lines
-               )+
-             /mx
-            string = s.sub!(pattern, "\\0#{output}\n")
-            odie "Bottle block addition failed!" unless string
+            Utils::Bottles.add_bottle_stanza!(s.inreplace_string, output)
           end
         end
 
