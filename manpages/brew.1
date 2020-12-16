@@ -258,6 +258,14 @@ The Gist will be marked private and will not appear in listings but will be acce
 .SS "\fBhome\fR [\fIformula\fR|\fIcask\fR]"
 Open a \fIformula\fR or \fIcask\fR\'s homepage in a browser, or open Homebrew\'s own homepage if no argument is provided\.
 .
+.TP
+\fB\-\-formula\fR
+Treat all named arguments as formulae\.
+.
+.TP
+\fB\-\-cask\fR
+Treat all named arguments as casks\.
+.
 .SS "\fBinfo\fR [\fIoptions\fR] [\fIformula\fR|\fIcask\fR]"
 Display brief statistics for your Homebrew installation\.
 .
@@ -1434,31 +1442,31 @@ For every library that a keg references, print its dylib path followed by the bi
 \fB\-\-cached\fR
 Print the cached linkage values stored in \fBHOMEBREW_CACHE\fR, set by a previous \fBbrew linkage\fR run\.
 .
-.SS "\fBlivecheck\fR [\fIformulae\fR]"
-Check for newer versions of formulae from upstream\.
+.SS "\fBlivecheck\fR [\fIformulae\fR|\fIcasks\fR]"
+Check for newer versions of formulae and/or casks from upstream\.
 .
 .P
-If no formula argument is passed, the list of formulae to check is taken from \fBHOMEBREW_LIVECHECK_WATCHLIST\fR or \fB~/\.brew_livecheck_watchlist\fR\.
+If no formula or cask argument is passed, the list of formulae and casks to check is taken from \fBHOMEBREW_LIVECHECK_WATCHLIST\fR or \fB~/\.brew_livecheck_watchlist\fR\.
 .
 .TP
 \fB\-\-full\-name\fR
-Print formulae with fully\-qualified names\.
+Print formulae/casks with fully\-qualified names\.
 .
 .TP
 \fB\-\-tap\fR
-Check formulae within the given tap, specified as \fIuser\fR\fB/\fR\fIrepo\fR\.
+Check formulae/casks within the given tap, specified as \fIuser\fR\fB/\fR\fIrepo\fR\.
 .
 .TP
 \fB\-\-all\fR
-Check all available formulae\.
+Check all available formulae/casks\.
 .
 .TP
 \fB\-\-installed\fR
-Check formulae that are currently installed\.
+Check formulae/casks that are currently installed\.
 .
 .TP
 \fB\-\-newer\-only\fR
-Show the latest version only if it\'s newer than the formula\.
+Show the latest version only if it\'s newer than the formula/cask\.
 .
 .TP
 \fB\-\-json\fR
@@ -1467,6 +1475,14 @@ Output information in JSON format\.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress warnings, don\'t print a progress bar for JSON output\.
+.
+.TP
+\fB\-\-formula\fR
+Only check formulae\.
+.
+.TP
+\fB\-\-cask\fR
+Only check casks\.
 .
 .SS "\fBman\fR [\fIoptions\fR]"
 Generate Homebrew\'s manpages\.
@@ -1589,7 +1605,7 @@ Message to include when autosquashing revision bumps, deletions, and rebuilds\.
 .
 .TP
 \fB\-\-workflow\fR
-Retrieve artifacts from the specified workflow (default: \fBtests\.yml\fR)\. Legacy: use \-\-workflows instead
+Retrieve artifacts from the specified workflow (default: \fBtests\.yml\fR)\. \fILegacy:\fR use \fB\-\-workflows\fR instead\.
 .
 .TP
 \fB\-\-artifact\fR
@@ -2163,6 +2179,10 @@ Clean all state from the Homebrew directory\. Use with care!
 .TP
 \fB\-\-skip\-setup\fR
 Don\'t check if the local system is set up correctly\.
+.
+.TP
+\fB\-\-build\-from\-source\fR
+Build from source rather than building bottles\.
 .
 .TP
 \fB\-\-keep\-old\fR

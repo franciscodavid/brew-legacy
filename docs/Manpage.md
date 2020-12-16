@@ -211,6 +211,11 @@ error message if no logs are found.
 Open a *`formula`* or *`cask`*'s homepage in a browser, or open
 Homebrew's own homepage if no argument is provided.
 
+* `--formula`:
+  Treat all named arguments as formulae.
+* `--cask`:
+  Treat all named arguments as casks.
+
 ### `info` [*`options`*] [*`formula`*|*`cask`*]
 
 Display brief statistics for your Homebrew installation.
@@ -1039,27 +1044,32 @@ provided, check all kegs. Raises an error if run on uninstalled formulae.
 * `--cached`:
   Print the cached linkage values stored in `HOMEBREW_CACHE`, set by a previous `brew linkage` run.
 
-### `livecheck` [*`formulae`*]
+### `livecheck` [*`formulae`*|*`casks`*]
 
-Check for newer versions of formulae from upstream.
+Check for newer versions of formulae and/or casks from upstream.
 
-If no formula argument is passed, the list of formulae to check is taken from `HOMEBREW_LIVECHECK_WATCHLIST`
-or `~/.brew_livecheck_watchlist`.
+If no formula or cask argument is passed, the list of formulae and
+casks to check is taken from `HOMEBREW_LIVECHECK_WATCHLIST` or
+`~/.brew_livecheck_watchlist`.
 
 * `--full-name`:
-  Print formulae with fully-qualified names.
+  Print formulae/casks with fully-qualified names.
 * `--tap`:
-  Check formulae within the given tap, specified as *`user`*`/`*`repo`*.
+  Check formulae/casks within the given tap, specified as *`user`*`/`*`repo`*.
 * `--all`:
-  Check all available formulae.
+  Check all available formulae/casks.
 * `--installed`:
-  Check formulae that are currently installed.
+  Check formulae/casks that are currently installed.
 * `--newer-only`:
-  Show the latest version only if it's newer than the formula.
+  Show the latest version only if it's newer than the formula/cask.
 * `--json`:
   Output information in JSON format.
 * `-q`, `--quiet`:
   Suppress warnings, don't print a progress bar for JSON output.
+* `--formula`:
+  Only check formulae.
+* `--cask`:
+  Only check casks.
 
 ### `man` [*`options`*]
 
@@ -1141,7 +1151,7 @@ Requires write access to the repository.
 * `--message`:
   Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--workflow`:
-  Retrieve artifacts from the specified workflow (default: `tests.yml`). Legacy: use --workflows instead
+  Retrieve artifacts from the specified workflow (default: `tests.yml`). *Legacy:* use `--workflows` instead.
 * `--artifact`:
   Download artifacts with the specified name (default: `bottles`).
 * `--bintray-org`:
@@ -1554,6 +1564,8 @@ Only supports GitHub Actions as a CI provider. This is because Homebrew uses Git
   Clean all state from the Homebrew directory. Use with care!
 * `--skip-setup`:
   Don't check if the local system is set up correctly.
+* `--build-from-source`:
+  Build from source rather than building bottles.
 * `--keep-old`:
   Run `brew bottle --keep-old` to build new bottles for a single platform.
 * `--skip-relocation`:
