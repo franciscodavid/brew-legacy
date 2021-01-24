@@ -12,9 +12,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def tests_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `tests` [<options>]
-
+      description <<~EOS
         Run Homebrew's unit and integration tests.
       EOS
       switch "--coverage",
@@ -34,7 +32,7 @@ module Homebrew
       flag   "--seed=",
              description: "Randomise tests with the specified <value> instead of a random seed."
 
-      max_named 0
+      named_args :none
     end
   end
 

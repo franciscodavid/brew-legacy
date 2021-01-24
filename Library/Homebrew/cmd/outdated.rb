@@ -15,9 +15,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def outdated_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `outdated` [<options>] [<formula>|<cask>]
-
+      description <<~EOS
         List installed casks and formulae that have an updated version available. By default, version
         information is displayed in interactive shells, and suppressed otherwise.
       EOS
@@ -42,6 +40,8 @@ module Homebrew
 
       conflicts "--quiet", "--verbose", "--json"
       conflicts "--formula", "--cask"
+
+      named_args [:formula, :cask]
     end
   end
 
@@ -49,9 +49,9 @@ module Homebrew
     args = outdated_args.parse
 
     case (j = json_version(args.json))
-    when :v1, :default
+    when :v1
       odisabled "brew outdated --json#{j == :v1 ? "=v1" : ""}", "brew outdated --json=v2"
-    when :v2
+    when :v2, :default
       formulae, casks = if args.formula?
         [outdated_formulae(args: args), []]
       elsif args.cask?

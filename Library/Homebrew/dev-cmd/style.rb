@@ -14,9 +14,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def style_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `style` [<options>] [<file>|<tap>|<formula>]
-
+      description <<~EOS
         Check formulae or files for conformance to Homebrew style guidelines.
 
         Lists of <file>, <tap> and <formula> may not be combined. If none are
@@ -29,6 +27,10 @@ module Homebrew
              description: "Include the RuboCop cop name for each violation in the output."
       switch "--reset-cache",
              description: "Reset the RuboCop cache."
+      switch "--formula", "--formulae",
+             description: "Treat all named arguments as formulae."
+      switch "--cask", "--casks",
+             description: "Treat all named arguments as casks."
       comma_array "--only-cops",
                   description: "Specify a comma-separated <cops> list to check for violations of only the "\
                                "listed RuboCop cops."
@@ -36,7 +38,10 @@ module Homebrew
                   description: "Specify a comma-separated <cops> list to skip checking for violations of the "\
                                "listed RuboCop cops."
 
+      conflicts "--formula", "--cask"
       conflicts "--only-cops", "--except-cops"
+
+      named_args [:file, :tap, :formula, :cask]
     end
   end
 

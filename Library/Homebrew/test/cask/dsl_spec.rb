@@ -7,7 +7,7 @@ describe Cask::DSL, :cask do
 
   context "stanzas" do
     it "lets you set url, homepage, and version" do
-      expect(cask.url.to_s).to eq("https://brew.sh/TestCask.dmg")
+      expect(cask.url.to_s).to eq("https://brew.sh/TestCask-1.2.3.dmg")
       expect(cask.homepage).to eq("https://brew.sh/")
       expect(cask.version.to_s).to eq("1.2.3")
     end
@@ -66,7 +66,7 @@ describe Cask::DSL, :cask do
 
       it "does not require a DSL version in the header" do
         expect(cask.token).to eq("no-dsl-version")
-        expect(cask.url.to_s).to eq("https://brew.sh/TestCask.dmg")
+        expect(cask.url.to_s).to eq("https://brew.sh/TestCask-1.2.3.dmg")
         expect(cask.homepage).to eq("https://brew.sh/")
         expect(cask.version.to_s).to eq("1.2.3")
       end
@@ -410,14 +410,6 @@ describe Cask::DSL, :cask do
   end
 
   describe "depends_on x11" do
-    context "valid" do
-      let(:token) { "with-depends-on-x11" }
-
-      it "is allowed to be specified" do
-        expect(cask.depends_on.x11).not_to be nil
-      end
-    end
-
     context "invalid depends_on x11 value" do
       let(:token) { "invalid/invalid-depends-on-x11-value" }
 

@@ -27,9 +27,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def audit_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `audit` [<options>] [<formula>|<cask>]
-
+      description <<~EOS
         Check <formula> for Homebrew coding style violations. This should be run before
         submitting a new formula or cask. If no <formula>|<cask> are provided, check all
         locally available formulae and casks and skip style checks. Will exit with a
@@ -90,6 +88,8 @@ module Homebrew
       conflicts "--display-cop-names", "--skip-style"
       conflicts "--display-cop-names", "--only-cops"
       conflicts "--display-cop-names", "--except-cops"
+
+      named_args [:formula, :cask]
     end
   end
 
@@ -109,9 +109,7 @@ module Homebrew
     online = new_formula || args.online?
     git = args.git?
     skip_style = args.skip_style? || args.no_named? || args.tap
-
-    only = :formula if args.formula? && !args.cask?
-    only = :cask if args.cask? && !args.formula?
+    no_named_args = false
 
     ENV.activate_extensions!
     ENV.setup_build_environment
@@ -124,9 +122,10 @@ module Homebrew
         ]
       end
     elsif args.no_named?
+      no_named_args = true
       [Formula, Cask::Cask.to_a]
     else
-      args.named.to_formulae_and_casks(only: only)
+      args.named.to_formulae_and_casks
           .partition { |formula_or_cask| formula_or_cask.is_a?(Formula) }
     end
     style_files = args.named.to_paths unless skip_style
@@ -225,6 +224,7 @@ module Homebrew
         new_cask:        args.new_cask?,
         token_conflicts: args.token_conflicts?,
         quarantine:      nil,
+        any_named_args:  !no_named_args,
         language:        nil,
       )
     end

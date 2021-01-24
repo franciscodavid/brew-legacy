@@ -83,9 +83,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def extract_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `extract` [<options>] <formula> <tap>
-
+      description <<~EOS
         Look through repository history to find the most recent version of <formula> and
         create a copy in <tap>`/Formula/`<formula>`@`<version>`.rb`. If the tap is not
         installed yet, attempt to install/clone the tap before continuing. To extract
@@ -97,7 +95,7 @@ module Homebrew
       switch "-f", "--force",
              description: "Overwrite the destination formula if it already exists."
 
-      named 2
+      named_args :formula, number: 2
     end
   end
 

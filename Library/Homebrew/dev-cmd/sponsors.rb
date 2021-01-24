@@ -12,11 +12,11 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def sponsors_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `sponsors`
-
+      description <<~EOS
         Print a Markdown summary of Homebrew's GitHub Sponsors, suitable for pasting into a README.
       EOS
+
+      named_args :none
     end
   end
 

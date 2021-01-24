@@ -1,6 +1,9 @@
 # TODO: Try getting more rules in sync.
 
-require: ./Homebrew/rubocops.rb
+require:
+  - ./Homebrew/rubocops.rb
+  - rubocop-performance
+  - rubocop-rails
 
 inherit_mode:
   merge:
@@ -51,6 +54,14 @@ FormulaAudit:
 FormulaAuditStrict:
   Enabled: true
 
+# makes DSL usage ugly.
+Layout/SpaceBeforeBrackets:
+  Exclude:
+    - "**/*_spec.rb"
+    - "Taps/*/*/*.rb"
+    - "/**/{Formula,Casks}/*.rb"
+    - "**/{Formula,Casks}/*.rb"
+
 # Use `<<~` for heredocs.
 Layout/HeredocIndentation:
   Enabled: true
@@ -59,6 +70,10 @@ Layout/HeredocIndentation:
 # problems as normal parameters.
 Metrics/ParameterLists:
   CountKeywordArgs: false
+
+# Allow dashes in filenames.
+Naming/FileName:
+  Regex: !ruby/regexp /^[\w\@\-\+\.]+(\.rb)?$/
 
 # Implicitly allow EOS as we use it everywhere.
 Naming/HeredocDelimiterNaming:
@@ -69,14 +84,15 @@ Naming/MethodName:
   IgnoredPatterns:
     - '\A(fetch_)?HEAD\?\Z'
 
-# Allow dashes in filenames.
-Naming/FileName:
-  Regex: !ruby/regexp /^[\w\@\-\+\.]+(\.rb)?$/
-
 # Both styles are used depending on context,
 # e.g. `sha256` and `something_countable_1`.
 Naming/VariableNumber:
   Enabled: false
+
+# Require &&/|| instead of and/or
+Style/AndOr:
+  Enabled: true
+  EnforcedStyle: always
 
 # Avoid leaking resources.
 Style/AutoResourceCleanup:
@@ -354,6 +370,7 @@ Sorbet/FalseSigil:
     - "/**/{Formula,Casks}/*.rb"
     - "**/{Formula,Casks}/*.rb"
     - "Homebrew/test/**/Casks/**/*.rb"
+    - "Homebrew/homebrew_bootsnap.rb"
 
 Sorbet/StrictSigil:
   Enabled: true

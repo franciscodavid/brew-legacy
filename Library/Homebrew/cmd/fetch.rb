@@ -16,16 +16,12 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def fetch_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `fetch` [<options>] <formula>
-
+      description <<~EOS
         Download a bottle (if available) or source packages for <formula>e
         and binaries for <cask>s. For files, also print SHA-256 checksums.
       EOS
       switch "--HEAD",
              description: "Fetch HEAD version instead of stable version."
-      switch "--devel",
-             description: "Fetch development version instead of stable version."
       switch "-f", "--force",
              description: "Remove a previously cached version and re-fetch."
       switch "-v", "--verbose",
@@ -53,24 +49,19 @@ module Homebrew
              description: "Treat all named arguments as casks."
       conflicts "--formula", "--cask"
 
-      conflicts "--devel", "--HEAD"
       conflicts "--build-from-source", "--build-bottle", "--force-bottle"
       conflicts "--cask", "--HEAD"
-      conflicts "--cask", "--devel"
       conflicts "--cask", "--deps"
       conflicts "--cask", "-s"
       conflicts "--cask", "--build-bottle"
       conflicts "--cask", "--force-bottle"
 
-      min_named :formula_or_cask
+      named_args [:formula, :cask], min: 1
     end
   end
 
   def fetch
     args = fetch_args.parse
-
-    only = :formula if args.formula? && !args.cask?
-    only = :cask if args.cask? && !args.formula?
 
     bucket = if args.deps?
       args.named.to_formulae_and_casks.flat_map do |formula_or_cask|
@@ -84,7 +75,7 @@ module Homebrew
         end
       end
     else
-      args.named.to_formulae_and_casks(only: only)
+      args.named.to_formulae_and_casks
     end.uniq
 
     puts "Fetching: #{bucket * ", "}" if bucket.size > 1
@@ -139,28 +130,28 @@ module Homebrew
     fetch_fetchable r, args: args
   rescue ChecksumMismatchError => e
     retry if retry_fetch?(r, args: args)
-    opoo "Resource #{r.name} reports different #{e.hash_type}: #{e.expected}"
+    opoo "Resource #{r.name} reports different sha256: #{e.expected}"
   end
 
   def fetch_formula(f, args:)
     fetch_fetchable f, args: args
   rescue ChecksumMismatchError => e
     retry if retry_fetch?(f, args: args)
-    opoo "Formula reports different #{e.hash_type}: #{e.expected}"
+    opoo "Formula reports different sha256: #{e.expected}"
   end
 
   def fetch_cask(cask_download, args:)
     fetch_fetchable cask_download, args: args
   rescue ChecksumMismatchError => e
     retry if retry_fetch?(cask_download, args: args)
-    opoo "Cask reports different #{e.hash_type}: #{e.expected}"
+    opoo "Cask reports different sha256: #{e.expected}"
   end
 
   def fetch_patch(p, args:)
     fetch_fetchable p, args: args
   rescue ChecksumMismatchError => e
     Homebrew.failed = true
-    opoo "Patch reports different #{e.hash_type}: #{e.expected}"
+    opoo "Patch reports different sha256: #{e.expected}"
   end
 
   def retry_fetch?(f, args:)
@@ -190,7 +181,7 @@ module Homebrew
     return unless download.file?
 
     puts "Downloaded to: #{download}" unless already_fetched
-    puts Checksum::TYPES.map { |t| "#{t.to_s.upcase}: #{download.send(t)}" }
+    puts "SHA256: #{download.sha256}"
 
     f.verify_download_integrity(download)
   end

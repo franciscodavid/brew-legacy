@@ -14,17 +14,13 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def test_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `test` [<options>] <formula>
-
+      description <<~EOS
         Run the test method provided by an installed formula.
         There is no standard output or return code, but generally it should notify the
         user if something is wrong with the installed formula.
 
         *Example:* `brew install jruby && brew test jruby`
       EOS
-      switch "--devel",
-             description: "Test the development version of a formula."
       switch "--HEAD",
              description: "Test the head version of a formula."
       switch "--keep-tmp",
@@ -32,8 +28,7 @@ module Homebrew
       switch "--retry",
              description: "Retry if a testing fails."
 
-      conflicts "--devel", "--HEAD"
-      min_named :formula
+      named_args :installed_formula, min: 1
     end
   end
 

@@ -23,9 +23,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def install_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `install` [<options>] <formula>|<cask>
-
+      description <<~EOS
         Install a <formula> or <cask>. Additional options specific to a <formula> may be
         appended to the command.
 
@@ -37,7 +35,8 @@ module Homebrew
                           "or a shell inside the temporary build directory."
       switch "-f", "--force",
              description: "Install formulae without checking for previously installed keg-only or " \
-                          "non-migrated versions. Overwrite existing files when installing casks."
+                          "non-migrated versions. When installing casks, overwrite existing files "\
+                          "(binaries and symlinks are excluded, unless originally from the same cask)."
       switch "-v", "--verbose",
              description: "Print the verification and postinstall steps."
       [
@@ -124,15 +123,18 @@ module Homebrew
 
       conflicts "--ignore-dependencies", "--only-dependencies"
       conflicts "--build-from-source", "--build-bottle", "--force-bottle"
-      min_named :formula_or_cask
+
+      named_args [:formula, :cask], min: 1
     end
   end
 
   def install
     args = install_args.parse
 
-    only = :formula if args.formula? && !args.cask?
-    only = :cask if args.cask? && !args.formula?
+    if args.env.present?
+      # TODO: enable for Homebrew 2.8.0 and use `replacement: false` for 2.9.0.
+      # odeprecated "brew install --env", "`env :std` in specific formula files"
+    end
 
     args.named.each do |name|
       next if File.exist?(name)
@@ -151,8 +153,14 @@ module Homebrew
       EOS
     end
 
-    formulae, casks = args.named.to_formulae_and_casks(only: only)
-                          .partition { |formula_or_cask| formula_or_cask.is_a?(Formula) }
+    begin
+      formulae, casks = args.named.to_formulae_and_casks
+                            .partition { |formula_or_cask| formula_or_cask.is_a?(Formula) }
+    rescue FormulaOrCaskUnavailableError, Cask::CaskUnavailableError => e
+      retry if Tap.install_default_cask_tap_if_necessary(force: args.cask?)
+
+      raise e
+    end
 
     if casks.any?
       Cask::Cmd::Install.install_casks(
@@ -160,8 +168,8 @@ module Homebrew
         binaries:       args.binaries?,
         verbose:        args.verbose?,
         force:          args.force?,
-        skip_cask_deps: args.skip_cask_deps?,
         require_sha:    args.require_sha?,
+        skip_cask_deps: args.skip_cask_deps?,
         quarantine:     args.quarantine?,
       )
     end

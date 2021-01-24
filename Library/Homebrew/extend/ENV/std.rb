@@ -4,7 +4,7 @@
 require "hardware"
 require "extend/ENV/shared"
 
-# @private
+# @api private
 module Stdenv
   extend T::Sig
 
@@ -14,14 +14,14 @@ module Stdenv
   SAFE_CFLAGS_FLAGS = "-w -pipe"
 
   # @private
-  sig do
+  sig {
     params(
       formula:      T.nilable(Formula),
       cc:           T.nilable(String),
       build_bottle: T.nilable(T::Boolean),
       bottle_arch:  T.nilable(T::Boolean),
     ).void
-  end
+  }
   def setup_build_environment(formula: nil, cc: nil, build_bottle: false, bottle_arch: nil)
     super
 
@@ -99,6 +99,8 @@ module Stdenv
 
   %w[O3 O2 O1 O0 Os].each do |opt|
     define_method opt do
+      odeprecated "ENV.#{opt}"
+
       send(:remove_from_cflags, /-O./)
       send(:append_to_cflags, "-#{opt}")
     end
@@ -139,18 +141,24 @@ module Stdenv
 
   sig { void }
   def m64
+    odeprecated "ENV.m64"
+
     append_to_cflags "-m64"
     append "LDFLAGS", "-arch #{Hardware::CPU.arch_64_bit}"
   end
 
   sig { void }
   def m32
+    odeprecated "ENV.m32"
+
     append_to_cflags "-m32"
     append "LDFLAGS", "-arch #{Hardware::CPU.arch_32_bit}"
   end
 
   sig { void }
   def universal_binary
+    odeprecated "ENV.universal_binary"
+
     check_for_compiler_universal_support
 
     append_to_cflags Hardware::CPU.universal_archs.as_arch_flags
@@ -176,6 +184,8 @@ module Stdenv
 
   sig { void }
   def libstdcxx
+    odeprecated "ENV.libstdcxx"
+
     append "CXX", "-stdlib=libstdc++" if compiler == :clang
   end
 
@@ -209,7 +219,9 @@ module Stdenv
   end
 
   sig { void }
-  def x11; end
+  def x11
+    odeprecated "ENV.x11", "depends_on specific X11 formula(e)"
+  end
 
   # @private
   sig { params(map: T::Hash[Symbol, String]).void }

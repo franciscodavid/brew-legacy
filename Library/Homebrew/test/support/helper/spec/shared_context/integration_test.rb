@@ -123,7 +123,7 @@ RSpec.shared_context "integration test" do
     end
   end
 
-  def setup_test_formula(name, content = nil)
+  def setup_test_formula(name, content = nil, bottle_block: nil)
     case name
     when /^testball/
       tarball = if OS.linux?
@@ -138,7 +138,7 @@ RSpec.shared_context "integration test" do
         sha256 "#{tarball.sha256}"
 
         option "with-foo", "Build with foo"
-
+        #{bottle_block}
         def install
           (prefix/"foo"/"test").write("test") if build.with? "foo"
           prefix.install Dir["*"]
@@ -171,7 +171,7 @@ RSpec.shared_context "integration test" do
     Formulary.core_path(name).tap do |formula_path|
       formula_path.write <<~RUBY
         class #{Formulary.class_s(name)} < Formula
-          #{content}
+        #{content.indent(2)}
         end
       RUBY
     end

@@ -11,10 +11,10 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def typecheck_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `typecheck`
-
+      description <<~EOS
         Check for typechecking errors using Sorbet.
+
+        Not (yet) working on Apple Silicon.
       EOS
       switch "--fix",
              description: "Automatically fix type errors."
@@ -37,12 +37,18 @@ module Homebrew
                           "in their paths (relative to the input path passed to Sorbet)."
 
       conflicts "--dir", "--file"
-      max_named 0
+
+      named_args :none
     end
   end
 
   sig { void }
   def typecheck
+    # TODO: update description above if removing this.
+    if Hardware::CPU.arm? || Hardware::CPU.in_rosetta2?
+      raise UsageError, "not (yet) working on Apple Silicon or Rosetta 2!"
+    end
+
     args = typecheck_args.parse
 
     Homebrew.install_bundler_gems!

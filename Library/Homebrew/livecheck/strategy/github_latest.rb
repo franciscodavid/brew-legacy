@@ -40,7 +40,11 @@ module Homebrew
         PRIORITY = 0
 
         # The `Regexp` used to determine if the strategy applies to the URL.
-        URL_MATCH_REGEX = %r{//github\.com(?:/downloads)?(?:/[^/]+){2}}i.freeze
+        URL_MATCH_REGEX = %r{
+          ^https?://github\.com
+          /(?:downloads/)?(?<username>[^/]+) # The GitHub username
+          /(?<repository>[^/]+)              # The GitHub repository name
+        }ix.freeze
 
         # Whether the strategy can be applied to the provided URL.
         #
@@ -56,16 +60,16 @@ module Homebrew
         # @param url [String] the URL of the content to check
         # @param regex [Regexp] a regex used for matching versions in content
         # @return [Hash]
-        def self.find_versions(url, regex = nil)
-          %r{github\.com/(?:downloads/)?(?<username>[^/]+)/(?<repository>[^/]+)}i =~ url.sub(/\.git$/i, "")
+        def self.find_versions(url, regex = nil, &block)
+          match = url.sub(/\.git$/i, "").match(URL_MATCH_REGEX)
 
           # Example URL: `https://github.com/example/example/releases/latest`
-          page_url = "https://github.com/#{username}/#{repository}/releases/latest"
+          page_url = "https://github.com/#{match[:username]}/#{match[:repository]}/releases/latest"
 
           # The default regex is the same for all URLs using this strategy
           regex ||= %r{href=.*?/tag/v?(\d+(?:\.\d+)+)["' >]}i
 
-          Homebrew::Livecheck::Strategy::PageMatch.find_versions(page_url, regex)
+          PageMatch.find_versions(page_url, regex, &block)
         end
       end
     end

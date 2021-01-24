@@ -8,6 +8,7 @@ require "descriptions"
 require "cleanup"
 require "description_cache_store"
 require "cli/parser"
+require "settings"
 
 module Homebrew
   extend T::Sig
@@ -24,9 +25,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def update_report_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `update-report`
-
+      description <<~EOS
         The Ruby implementation of `brew update`. Never called manually.
       EOS
       switch "--preinstall",
@@ -63,21 +62,18 @@ module Homebrew
       Utils::Analytics.messages_displayed! if $stdout.tty?
     end
 
-    HOMEBREW_REPOSITORY.cd do
-      donation_message_displayed =
-        Utils.popen_read("git", "config", "--get", "homebrew.donationmessage").chomp == "true"
-      unless donation_message_displayed
-        ohai "Homebrew is run entirely by unpaid volunteers. Please consider donating:"
-        puts "  #{Formatter.url("https://github.com/Homebrew/brew#donations")}\n"
+    if Settings.read("donationmessage") != "true" && !args.quiet?
+      ohai "Homebrew is run entirely by unpaid volunteers. Please consider donating:"
+      puts "  #{Formatter.url("https://github.com/Homebrew/brew#donations")}\n"
 
-        # Consider the message possibly missed if not a TTY.
-        safe_system "git", "config", "--replace-all", "homebrew.donationmessage", "true" if $stdout.tty?
-      end
+      # Consider the message possibly missed if not a TTY.
+      Settings.write "donationmessage", true if $stdout.tty?
     end
 
     install_core_tap_if_necessary
 
     updated = false
+    new_repository_version = nil
 
     initial_revision = ENV["HOMEBREW_UPDATE_BEFORE"].to_s
     current_revision = ENV["HOMEBREW_UPDATE_AFTER"].to_s
@@ -87,6 +83,17 @@ module Homebrew
       update_preinstall_header args: args
       puts "Updated Homebrew from #{shorten_revision(initial_revision)} to #{shorten_revision(current_revision)}."
       updated = true
+
+      old_tag = Settings.read "latesttag"
+
+      new_tag = Utils.popen_read(
+        "git", "-C", HOMEBREW_REPOSITORY, "tag", "--list", "--sort=-version:refname", "*.*"
+      ).lines.first.chomp
+
+      if new_tag != old_tag
+        Settings.write "latesttag", new_tag
+        new_repository_version = new_tag
+      end
     end
 
     Homebrew.failed = true if ENV["HOMEBREW_UPDATE_FAILED"]
@@ -118,7 +125,7 @@ module Homebrew
 
     if updated
       if hub.empty?
-        puts "No changes to formulae."
+        puts "No changes to formulae." unless args.quiet?
       else
         hub.dump(updated_formula_report: !args.preinstall?)
         hub.reporters.each(&:migrate_tap_migration)
@@ -130,12 +137,27 @@ module Homebrew
       end
       puts if args.preinstall?
     elsif !args.preinstall? && !ENV["HOMEBREW_UPDATE_FAILED"]
-      puts "Already up-to-date."
+      puts "Already up-to-date." unless args.quiet?
     end
 
     Commands.rebuild_commands_completion_list
     link_completions_manpages_and_docs
     Tap.each(&:link_completions_and_manpages)
+
+    return if new_repository_version.blank?
+
+    ohai "Homebrew was updated to version #{new_repository_version}"
+    if new_repository_version.split(".").last == "0"
+      puts <<~EOS
+        More detailed release notes are available on the Homebrew Blog:
+          #{Formatter.url("https://brew.sh/blog/#{new_repository_version}")}
+      EOS
+    else
+      puts <<~EOS
+        The changelog can be found at:
+          #{Formatter.url("https://github.com/Homebrew/brew/releases/tag/#{new_repository_version}")}
+      EOS
+    end
   end
 
   def shorten_revision(revision)
@@ -456,7 +478,15 @@ class ReporterHub
     dump_formula_report :R, "Renamed Formulae"
     dump_formula_report :D, "Deleted Formulae"
     dump_formula_report :AC, "New Casks"
-    dump_formula_report :MC, "Updated Casks"
+    if updated_formula_report
+      dump_formula_report :MC, "Updated Casks"
+    else
+      updated = select_formula(:MC).count
+      if updated.positive?
+        ohai "Updated Casks"
+        puts "Updated #{updated} #{"cask".pluralize(updated)}."
+      end
+    end
     dump_formula_report :DC, "Deleted Casks"
   end
 

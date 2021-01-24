@@ -20,6 +20,8 @@ class SystemCommand
 
   # Helper functions for calling {SystemCommand.run}.
   module Mixin
+    extend T::Sig
+
     def system_command(*args)
       T.unsafe(SystemCommand).run(*args)
     end
@@ -32,8 +34,6 @@ class SystemCommand
   include Context
   extend Predicable
 
-  attr_reader :pid
-
   def self.run(executable, **options)
     T.unsafe(self).new(executable, **options).run!
   end
@@ -44,7 +44,7 @@ class SystemCommand
 
   sig { returns(SystemCommand::Result) }
   def run!
-    puts redact_secrets(command.shelljoin.gsub('\=', "="), @secrets) if verbose? || debug?
+    $stderr.puts redact_secrets(command.shelljoin.gsub('\=', "="), @secrets) if verbose? || debug?
 
     @output = []
 
@@ -64,7 +64,7 @@ class SystemCommand
     result
   end
 
-  sig do
+  sig {
     params(
       executable:   T.any(String, Pathname),
       args:         T::Array[T.any(String, Integer, Float, URI::Generic)],
@@ -74,13 +74,14 @@ class SystemCommand
       must_succeed: T::Boolean,
       print_stdout: T::Boolean,
       print_stderr: T::Boolean,
-      verbose:      T::Boolean,
+      debug:        T.nilable(T::Boolean),
+      verbose:      T.nilable(T::Boolean),
       secrets:      T.any(String, T::Array[String]),
       chdir:        T.any(String, Pathname),
     ).void
-  end
+  }
   def initialize(executable, args: [], sudo: false, env: {}, input: [], must_succeed: false,
-                 print_stdout: false, print_stderr: true, verbose: false, secrets: [], chdir: T.unsafe(nil))
+                 print_stdout: false, print_stderr: true, debug: nil, verbose: nil, secrets: [], chdir: T.unsafe(nil))
     require "extend/ENV"
     @executable = executable
     @args = args
@@ -95,6 +96,7 @@ class SystemCommand
     @must_succeed = must_succeed
     @print_stdout = print_stdout
     @print_stderr = print_stderr
+    @debug = debug
     @verbose = verbose
     @secrets = (Array(secrets) + ENV.sensitive_environment.values).uniq
     @chdir = chdir
@@ -110,6 +112,13 @@ class SystemCommand
   attr_reader :executable, :args, :input, :chdir, :env
 
   attr_predicate :sudo?, :print_stdout?, :print_stderr?, :must_succeed?
+
+  sig { returns(T::Boolean) }
+  def debug?
+    return super if @debug.nil?
+
+    @debug
+  end
 
   sig { returns(T::Boolean) }
   def verbose?
@@ -152,28 +161,42 @@ class SystemCommand
     end
   end
 
-  def each_output_line(&b)
+  sig { params(block: T.proc.params(type: Symbol, line: String).void).void }
+  def each_output_line(&block)
     executable, *args = command
+    options = {
+      # Create a new process group so that we can send `SIGINT` from
+      # parent to child rather than the child receiving `SIGINT` directly.
+      pgroup: sudo? ? nil : true,
+    }
+    options[:chdir] = chdir if chdir
 
-    raw_stdin, raw_stdout, raw_stderr, raw_wait_thr =
-      T.unsafe(Open3).popen3(env, [executable, executable], *args, **{ chdir: chdir }.compact)
-    @pid = raw_wait_thr.pid
+    pid = T.let(nil, T.nilable(Integer))
+    raw_stdin, raw_stdout, raw_stderr, raw_wait_thr = ignore_interrupts do
+      T.unsafe(Open3).popen3(env, [executable, executable], *args, **options)
+       .tap { |*, wait_thr| pid = wait_thr.pid }
+    end
 
     write_input_to(raw_stdin)
     raw_stdin.close_write
-    each_line_from [raw_stdout, raw_stderr], &b
+    each_line_from [raw_stdout, raw_stderr], &block
 
     @status = raw_wait_thr.value
+  rescue Interrupt
+    Process.kill("INT", pid) if pid && !sudo?
+    raise Interrupt
   rescue SystemCallError => e
     @status = $CHILD_STATUS
     @output << [:stderr, e.message]
   end
 
+  sig { params(raw_stdin: IO).void }
   def write_input_to(raw_stdin)
     input.each(&raw_stdin.method(:write))
   end
 
-  def each_line_from(sources)
+  sig { params(sources: T::Array[IO], _block: T.proc.params(type: Symbol, line: String).void).void }
+  def each_line_from(sources, &_block)
     loop do
       readable_sources, = IO.select(sources)
 
@@ -201,14 +224,14 @@ class SystemCommand
 
     attr_accessor :command, :status, :exit_status
 
-    sig do
+    sig {
       params(
         command: T::Array[String],
         output:  T::Array[[Symbol, String]],
         status:  Process::Status,
         secrets: T::Array[String],
       ).void
-    end
+    }
     def initialize(command, output, status, secrets:)
       @command       = command
       @output        = output

@@ -12,9 +12,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def pr_upload_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `pr-upload` [<options>]
-
+      description <<~EOS
         Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
       EOS
       switch "--no-publish",
@@ -33,6 +31,8 @@ module Homebrew
              description: "Upload to the specified Bintray organisation (default: `homebrew`)."
       flag   "--root-url=",
              description: "Use the specified <URL> as the root of the bottle's URL instead of Homebrew's default."
+
+      named_args :none
     end
   end
 

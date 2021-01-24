@@ -11,9 +11,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def __prefix_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `--prefix` [<formula>]
-
+      description <<~EOS
         Display Homebrew's install path. *Default:*
 
           - macOS Intel: `#{HOMEBREW_DEFAULT_PREFIX}`
@@ -25,6 +23,8 @@ module Homebrew
       EOS
       switch "--unbrewed",
              description: "List files in Homebrew's prefix not installed by Homebrew."
+
+      named_args :formula
     end
   end
 

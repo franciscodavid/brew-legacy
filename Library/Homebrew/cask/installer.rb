@@ -120,6 +120,11 @@ module Cask
       return unless @cask.conflicts_with
 
       @cask.conflicts_with[:cask].each do |conflicting_cask|
+        if (match = conflicting_cask.match(HOMEBREW_TAP_CASK_REGEX))
+          conflicting_cask_tap = Tap.fetch(match[1], match[2])
+          next unless conflicting_cask_tap.installed?
+        end
+
         conflicting_cask = CaskLoader.load(conflicting_cask)
         raise CaskConflictError.new(@cask, conflicting_cask) if conflicting_cask.installed?
       rescue CaskUnavailableError
@@ -152,10 +157,14 @@ module Cask
       s.freeze
     end
 
+    sig { returns(Download) }
+    def downloader
+      @downloader ||= Download.new(@cask, quarantine: quarantine?)
+    end
+
     sig { returns(Pathname) }
     def download
-      @download ||= Download.new(@cask, quarantine: quarantine?)
-                            .fetch(verify_download_integrity: @verify_download_integrity)
+      @download ||= downloader.fetch(verify_download_integrity: @verify_download_integrity)
     end
 
     def verify_has_sha
@@ -180,7 +189,7 @@ module Cask
 
       odebug "Using container class #{primary_container.class} for #{primary_container.path}"
 
-      basename = CGI.unescape(File.basename(@cask.url.path))
+      basename = downloader.basename
 
       if nested_container = @cask.container&.nested
         Dir.mktmpdir do |tmpdir|
@@ -405,7 +414,7 @@ module Cask
     def uninstall
       oh1 "Uninstalling Cask #{Formatter.identifier(@cask)}"
       uninstall_artifacts(clear: true)
-      remove_config_file unless reinstall? || upgrade?
+      remove_config_file if !reinstall? && !upgrade?
       purge_versioned_files
       purge_caskroom_path if force?
     end
@@ -426,7 +435,7 @@ module Cask
     end
 
     def restore_backup
-      return unless backup_path.directory? && backup_metadata_path.directory?
+      return if !backup_path.directory? || !backup_metadata_path.directory?
 
       Pathname.new(@cask.staged_path).rmtree if @cask.staged_path.exist?
       Pathname.new(@cask.metadata_versioned_path).rmtree if @cask.metadata_versioned_path.exist?

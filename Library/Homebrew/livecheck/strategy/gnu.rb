@@ -33,17 +33,10 @@ module Homebrew
 
         # The `Regexp` used to determine if the strategy applies to the URL.
         URL_MATCH_REGEX = %r{
-          //.+?\.gnu\.org$|
-          gnu\.org/(?:gnu|software)/
+          ^https?://
+          (?:(?:[^/]+?\.)*gnu\.org/(?:gnu|software)/(?<project_name>[^/]+)/
+          |(?<project_name>[^/]+)\.gnu\.org/?$)
         }ix.freeze
-
-        # The `Regexp` used to parse the project name from the provided URL.
-        # The strategy uses this information to create the URL to check and
-        # the default regex.
-        PROJECT_NAME_REGEXES = [
-          %r{/(?:gnu|software)/(?<project_name>.+?)/}i,
-          %r{//(?<project_name>.+?)\.gnu\.org(?:/)?$}i,
-        ].freeze
 
         # Whether the strategy can be applied to the provided URL.
         #
@@ -59,25 +52,11 @@ module Homebrew
         # @param url [String] the URL of the content to check
         # @param regex [Regexp] a regex used for matching versions in content
         # @return [Hash]
-        def self.find_versions(url, regex = nil)
-          project_names = PROJECT_NAME_REGEXES.map do |project_name_regex|
-            m = url.match(project_name_regex)
-            m["project_name"] if m
-          end.compact
-          return { matches: {}, regex: regex, url: url } if project_names.blank?
-
-          if project_names.length > 1
-            odebug <<~EOS
-
-              Multiple project names found: #{match_list}
-
-            EOS
-          end
-
-          project_name = project_names.first
+        def self.find_versions(url, regex = nil, &block)
+          match = url.match(URL_MATCH_REGEX)
 
           # The directory listing page for the project's files
-          page_url = "http://ftp.gnu.org/gnu/#{project_name}/?C=M&O=D"
+          page_url = "http://ftp.gnu.org/gnu/#{match[:project_name]}/?C=M&O=D"
 
           # The default regex consists of the following parts:
           # * `href=.*?`: restricts matching to URLs in `href` attributes
@@ -87,9 +66,9 @@ module Homebrew
           # * `(?:\.[a-z]+|/)`: the file extension (a trailing delimiter)
           #
           # Example regex: `%r{href=.*?example[._-]v?(\d+(?:\.\d+)*)(?:\.[a-z]+|/)}i`
-          regex ||= %r{href=.*?#{project_name}[._-]v?(\d+(?:\.\d+)*)(?:\.[a-z]+|/)}i
+          regex ||= %r{href=.*?#{match[:project_name]}[._-]v?(\d+(?:\.\d+)*)(?:\.[a-z]+|/)}i
 
-          Homebrew::Livecheck::Strategy::PageMatch.find_versions(page_url, regex)
+          PageMatch.find_versions(page_url, regex, &block)
         end
       end
     end

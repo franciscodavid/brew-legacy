@@ -55,6 +55,7 @@ case "$*" in
   --cache)             echo "$HOMEBREW_CACHE"; exit 0 ;;
   shellenv)            source "$HOMEBREW_LIBRARY/Homebrew/cmd/shellenv.sh"; homebrew-shellenv; exit 0 ;;
   formulae)            source "$HOMEBREW_LIBRARY/Homebrew/cmd/formulae.sh"; homebrew-formulae; exit 0 ;;
+  casks)               source "$HOMEBREW_LIBRARY/Homebrew/cmd/casks.sh"; homebrew-casks; exit 0 ;;
 esac
 
 #####
@@ -171,11 +172,16 @@ update-preinstall() {
 
   if [[ "$HOMEBREW_COMMAND" = "install" || "$HOMEBREW_COMMAND" = "upgrade" ||
         "$HOMEBREW_COMMAND" = "bump-formula-pr" || "$HOMEBREW_COMMAND" = "bump-cask-pr" ||
-        "$HOMEBREW_COMMAND" = "bundle" ||
+        "$HOMEBREW_COMMAND" = "bundle" || "$HOMEBREW_COMMAND" = "release" ||
         "$HOMEBREW_COMMAND" = "tap" && $HOMEBREW_ARG_COUNT -gt 1 ||
         "$HOMEBREW_CASK_COMMAND" = "install" || "$HOMEBREW_CASK_COMMAND" = "upgrade" ]]
   then
     export HOMEBREW_AUTO_UPDATING="1"
+
+    if [[ -z "$HOMEBREW_AUTO_UPDATE_SECS" ]]
+    then
+      HOMEBREW_AUTO_UPDATE_SECS="300"
+    fi
 
     # Skip auto-update if the cask/core tap has been updated in the
     # last $HOMEBREW_AUTO_UPDATE_SECS.
@@ -313,13 +319,20 @@ then
   HOMEBREW_SYSTEM="Macintosh"
   [[ "$HOMEBREW_PROCESSOR" = "x86_64" ]] && HOMEBREW_PROCESSOR="Intel"
   HOMEBREW_MACOS_VERSION="$(/usr/bin/sw_vers -productVersion)"
-  HOMEBREW_OS_VERSION="macOS $HOMEBREW_MACOS_VERSION"
   # Don't change this from Mac OS X to match what macOS itself does in Safari on 10.12
   HOMEBREW_OS_USER_AGENT_VERSION="Mac OS X $HOMEBREW_MACOS_VERSION"
 
   # Intentionally set this variable by exploding another.
   # shellcheck disable=SC2086,SC2183
   printf -v HOMEBREW_MACOS_VERSION_NUMERIC "%02d%02d%02d" ${HOMEBREW_MACOS_VERSION//./ }
+
+  # Don't include minor versions for Big Sur and later.
+  if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -gt "110000" ]]
+  then
+    HOMEBREW_OS_VERSION="macOS ${HOMEBREW_MACOS_VERSION%.*}"
+  else
+    HOMEBREW_OS_VERSION="macOS $HOMEBREW_MACOS_VERSION"
+  fi
 
   # Refuse to run on pre-Yosemite
   if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "101000" ]]
@@ -410,6 +423,7 @@ Your Git executable: $(unset git && type -p $HOMEBREW_GIT)"
     fi
   fi
 
+  HOMEBREW_LINUX_MINIMUM_GLIBC_VERSION="2.13"
   unset HOMEBREW_MACOS_SYSTEM_RUBY_NEW_ENOUGH
 fi
 
@@ -447,6 +461,7 @@ export HOMEBREW_SYSTEM_CURL_TOO_OLD
 export HOMEBREW_GIT
 export HOMEBREW_GIT_WARNING
 export HOMEBREW_MINIMUM_GIT_VERSION
+export HOMEBREW_LINUX_MINIMUM_GLIBC_VERSION
 export HOMEBREW_PROCESSOR
 export HOMEBREW_PRODUCT
 export HOMEBREW_OS_VERSION
@@ -466,7 +481,7 @@ then
 Your xcode-select path is currently set to '/'.
 This causes the 'xcrun' tool to hang, and can render Homebrew unusable.
 If you are using Xcode, you should:
-  sudo xcode-select -switch /Applications/Xcode.app
+  sudo xcode-select --switch /Applications/Xcode.app
 Otherwise, you should:
   sudo rm -rf /usr/share/xcode-select
 EOS

@@ -5,6 +5,7 @@ require "formula"
 require "erb"
 require "ostruct"
 require "cli/parser"
+require "completions"
 
 module Homebrew
   extend T::Sig
@@ -18,30 +19,29 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def man_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `man` [<options>]
-
+      description <<~EOS
         Generate Homebrew's manpages.
+
+        Not (yet) working on Apple Silicon.
       EOS
       switch "--fail-if-changed",
              description: "Return a failing status code if changes are detected in the manpage outputs. This "\
                           "can be used to notify CI when the manpages are out of date. Additionally, "\
                           "the date used in new manpages will match those in the existing manpages (to allow "\
                           "comparison without factoring in the date)."
-      switch "--link",
-             description: "This is now done automatically by `brew update`."
-
-      max_named 0
+      named_args :none
     end
   end
 
   def man
-    args = man_args.parse
+    # TODO: update description above if removing this.
+    raise UsageError, "not (yet) working on Apple Silicon!" if Hardware::CPU.arm?
 
-    odie "`brew man --link` is now done automatically by `brew update`." if args.link?
+    args = man_args.parse
 
     Commands.rebuild_internal_commands_completion_list
     regenerate_man_pages(preserve_date: args.fail_if_changed?, quiet: args.quiet?)
+    Completions.update_shell_completions!
 
     diff = system_command "git", args: [
       "-C", HOMEBREW_REPOSITORY, "diff", "--exit-code", "docs/Manpage.md", "manpages", "completions"
@@ -218,7 +218,8 @@ module Homebrew
 
   sig { returns(String) }
   def global_cask_options_manpage
-    lines = ["These options are applicable to subcommands accepting a `--cask` flag and all `cask` commands.\n"]
+    lines = ["These options are applicable to the `install`, `reinstall`, and `upgrade` " \
+             "subcommands with the `--cask` flag.\n"]
     lines += Homebrew::CLI::Parser.global_cask_options.map do |_, long, description:, **|
       generate_option_doc(nil, long.chomp("="), description)
     end

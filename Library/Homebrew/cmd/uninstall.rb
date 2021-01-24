@@ -18,9 +18,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def uninstall_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `uninstall`, `rm`, `remove` [<options>] <formula>|<cask>
-
+      description <<~EOS
         Uninstall a <formula> or <cask>.
       EOS
       switch "-f", "--force",
@@ -40,17 +38,18 @@ module Homebrew
              description: "Treat all named arguments as casks."
       conflicts "--formula", "--cask"
 
-      min_named :formula_or_cask
+      named_args [:installed_formula, :installed_cask], min: 1
     end
   end
 
   def uninstall
     args = uninstall_args.parse
 
-    only = :formula if args.formula? && !args.cask?
-    only = :cask if args.cask? && !args.formula?
+    all_kegs, casks = args.named.to_kegs_to_casks(
+      ignore_unavailable: args.force?,
+      all_kegs:           args.force?,
+    )
 
-    all_kegs, casks = args.named.to_kegs_to_casks(only: only, ignore_unavailable: args.force?, all_kegs: args.force?)
     kegs_by_rack = all_kegs.group_by(&:rack)
 
     Uninstall.uninstall_kegs(

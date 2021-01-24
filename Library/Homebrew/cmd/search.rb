@@ -30,9 +30,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def search_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `search` [<options>] [<text>|`/`<text>`/`]
-
+      description <<~EOS
         Perform a substring search of cask tokens and formula names for <text>. If <text>
         is flanked by slashes, it is interpreted as a regular expression.
         The search for <text> is extended online to `homebrew/core` and `homebrew/cask`.
@@ -51,7 +49,13 @@ module Homebrew
                           "a name matching <text>."
       switch "--pull-request",
              description: "Search for GitHub pull requests containing <text>."
-
+      switch "--open",
+             depends_on:  "--pull-request",
+             description: "Search for only open GitHub pull requests"
+      switch "--closed",
+             depends_on:  "--pull-request",
+             description: "Search for only closed GitHub pull requests"
+      conflicts "--open", "--closed"
       package_manager_switches = PACKAGE_MANAGERS.keys.map { |name| "--#{name}" }
       package_manager_switches.each do |s|
         switch s,
@@ -60,6 +64,9 @@ module Homebrew
 
       conflicts("--desc", "--pull-request")
       conflicts(*package_manager_switches)
+
+      # TODO: (2.9) add `min: 1` when the `odeprecated`/`odisabled` for `brew search` with no arguments is removed
+      named_args :text_or_regex
     end
   end
 
@@ -78,7 +85,7 @@ module Homebrew
 
         puts Formatter.columns(Cask::Cask.to_a.map(&:full_name).sort)
       else
-        # odeprecated "'brew search' with no arguments to output formulae", "'brew formulae'"
+        odeprecated "'brew search' with no arguments to output formulae", "'brew formulae'"
         puts Formatter.columns(Formula.full_names.sort)
       end
 
@@ -91,7 +98,13 @@ module Homebrew
     if args.desc?
       search_descriptions(string_or_regex)
     elsif args.pull_request?
-      GitHub.print_pull_requests_matching(query)
+      only = if args.open? && !args.closed?
+        "open"
+      elsif args.closed? && !args.open?
+        "closed"
+      end
+
+      GitHub.print_pull_requests_matching(query, only)
     else
       remote_results = search_taps(query, silent: true)
 

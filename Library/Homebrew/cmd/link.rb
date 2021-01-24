@@ -14,9 +14,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def link_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `link`, `ln` [<options>] <formula>
-
+      description <<~EOS
         Symlink all of <formula>'s installed files into Homebrew's prefix. This
         is done automatically when you install formulae but can be useful for DIY
         installations.
@@ -29,7 +27,7 @@ module Homebrew
       switch "-f", "--force",
              description: "Allow keg-only formulae to be linked."
 
-      min_named :keg
+      named_args :installed_formula, min: 1
     end
   end
 

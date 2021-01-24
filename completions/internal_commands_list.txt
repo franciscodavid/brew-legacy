@@ -20,10 +20,12 @@ bump-formula-pr
 bump-revision
 bump-unversioned-casks
 cask
+casks
 cat
 cleanup
 command
 commands
+completions
 config
 configure
 create
@@ -44,7 +46,6 @@ help
 home
 homepage
 info
-instal
 install
 install-bundler-gems
 irb
@@ -71,9 +72,11 @@ pr-upload
 prof
 readall
 reinstall
+release
 release-notes
 remove
 rm
+rubocop
 ruby
 search
 sh
@@ -89,7 +92,6 @@ test
 tests
 typecheck
 unbottled
-uninstal
 uninstall
 unlink
 unpack
@@ -99,7 +101,6 @@ up
 update
 update-license-data
 update-python-resources
-update-report
 update-reset
 update-test
 upgrade

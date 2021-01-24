@@ -11,9 +11,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def bump_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `bump` [<options>] [<formula>]
-
+      description <<~EOS
         Display out-of-date brew formulae and the latest version available.
         Also displays whether a pull request has been opened with the URL.
       EOS
@@ -21,6 +19,8 @@ module Homebrew
              description: "Limit number of package results returned."
       switch :verbose
       switch :debug
+
+      named_args :formula
     end
   end
 

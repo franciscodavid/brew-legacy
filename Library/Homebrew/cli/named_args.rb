@@ -29,6 +29,8 @@ module Homebrew
         super(@args)
       end
 
+      attr_reader :parent
+
       def to_casks
         @to_casks ||= to_formulae_and_casks(only: :cask).freeze
       end
@@ -40,11 +42,11 @@ module Homebrew
       # Convert named arguments to {Formula} or {Cask} objects.
       # If both a formula and cask with the same name exist, returns
       # the formula and prints a warning unless `only` is specified.
-      sig do
+      sig {
         params(only: T.nilable(Symbol), ignore_unavailable: T.nilable(T::Boolean), method: T.nilable(Symbol))
           .returns(T::Array[T.any(Formula, Keg, Cask::Cask)])
-      end
-      def to_formulae_and_casks(only: nil, ignore_unavailable: nil, method: nil)
+      }
+      def to_formulae_and_casks(only: parent&.only_formula_or_cask, ignore_unavailable: nil, method: nil)
         @to_formulae_and_casks ||= {}
         @to_formulae_and_casks[only] ||= downcased_unique_named.flat_map do |name|
           load_formula_or_cask(name, only: only, method: method)
@@ -53,14 +55,14 @@ module Homebrew
         end.uniq.freeze
       end
 
-      def to_formulae_to_casks(only: nil, method: nil)
+      def to_formulae_to_casks(only: parent&.only_formula_or_cask, method: nil)
         @to_formulae_to_casks ||= {}
         @to_formulae_to_casks[[method, only]] = to_formulae_and_casks(only: only, method: method)
                                                 .partition { |o| o.is_a?(Formula) }
                                                 .map(&:freeze).freeze
       end
 
-      def to_formulae_and_casks_and_unavailable(only: nil, method: nil)
+      def to_formulae_and_casks_and_unavailable(only: parent&.only_formula_or_cask, method: nil)
         @to_formulae_casks_unknowns ||= {}
         @to_formulae_casks_unknowns[method] = downcased_unique_named.map do |name|
           load_formula_or_cask(name, only: only, method: method)
@@ -97,8 +99,6 @@ module Homebrew
           begin
             return Cask::CaskLoader.load(name, config: Cask::Config.from_args(@parent))
           rescue Cask::CaskUnavailableError => e
-            retry if Tap.install_default_cask_tap_if_necessary
-
             raise e if only == :cask
           end
         end
@@ -118,7 +118,7 @@ module Homebrew
                                   .freeze
       end
 
-      def to_resolved_formulae_to_casks(only: nil)
+      def to_resolved_formulae_to_casks(only: parent&.only_formula_or_cask)
         to_formulae_to_casks(only: only, method: :resolve)
       end
 
@@ -130,7 +130,7 @@ module Homebrew
       # If a cask and formula with the same name exist, includes both their paths
       # unless `only` is specified.
       sig { params(only: T.nilable(Symbol), recurse_tap: T::Boolean).returns(T::Array[Pathname]) }
-      def to_paths(only: nil, recurse_tap: false)
+      def to_paths(only: parent&.only_formula_or_cask, recurse_tap: false)
         @to_paths ||= {}
         @to_paths[only] ||= downcased_unique_named.flat_map do |name|
           if File.exist?(name)
@@ -173,17 +173,29 @@ module Homebrew
         end
       end
 
-      sig do
+      sig {
         params(only: T.nilable(Symbol), ignore_unavailable: T.nilable(T::Boolean), all_kegs: T.nilable(T::Boolean))
           .returns([T::Array[Keg], T::Array[Cask::Cask]])
-      end
-      def to_kegs_to_casks(only: nil, ignore_unavailable: nil, all_kegs: nil)
+      }
+      def to_kegs_to_casks(only: parent&.only_formula_or_cask, ignore_unavailable: nil, all_kegs: nil)
         method = all_kegs ? :kegs : :keg
         @to_kegs_to_casks ||= {}
         @to_kegs_to_casks[method] ||=
           to_formulae_and_casks(only: only, ignore_unavailable: ignore_unavailable, method: method)
           .partition { |o| o.is_a?(Keg) }
           .map(&:freeze).freeze
+      end
+
+      sig { returns(T::Array[Tap]) }
+      def to_taps
+        @to_taps ||= downcased_unique_named.map { |name| Tap.fetch name }.uniq.freeze
+      end
+
+      sig { returns(T::Array[Tap]) }
+      def to_installed_taps
+        @to_installed_taps ||= to_taps.each do |tap|
+          raise TapUnavailableError, tap.name unless tap.installed?
+        end.uniq.freeze
       end
 
       sig { returns(T::Array[String]) }

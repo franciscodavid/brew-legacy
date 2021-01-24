@@ -21,9 +21,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def reinstall_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `reinstall` [<options>] <formula>|<cask>
-
+      description <<~EOS
         Uninstall and then reinstall a <formula> or <cask> using the same options it was
         originally installed with, plus any appended options specific to a <formula>.
 
@@ -75,7 +73,8 @@ module Homebrew
       cask_options
 
       conflicts "--build-from-source", "--force-bottle"
-      min_named :formula_or_cask
+
+      named_args [:formula, :cask], min: 1
     end
   end
 
@@ -86,10 +85,7 @@ module Homebrew
 
     Install.perform_preinstall_checks
 
-    only = :cask if args.cask? && !args.formula?
-    only = :formula if !args.cask? && args.formula?
-
-    formulae, casks = args.named.to_formulae_and_casks(only: only, method: :resolve)
+    formulae, casks = args.named.to_formulae_and_casks(method: :resolve)
                           .partition { |o| o.is_a?(Formula) }
 
     formulae.each do |f|
@@ -107,12 +103,12 @@ module Homebrew
     if casks.any?
       Cask::Cmd::Reinstall.reinstall_casks(
         *casks,
-        binaries:       EnvConfig.cask_opts_binaries?,
+        binaries:       args.binaries?,
         verbose:        args.verbose?,
         force:          args.force?,
-        require_sha:    EnvConfig.cask_opts_require_sha?,
+        require_sha:    args.require_sha?,
         skip_cask_deps: args.skip_cask_deps?,
-        quarantine:     EnvConfig.cask_opts_quarantine?,
+        quarantine:     args.quarantine?,
       )
     end
 

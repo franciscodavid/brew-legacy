@@ -22,6 +22,7 @@ module RuboCop
           flex
           gcore
           gnu-getopt
+          gperf
           icu4c
           krb5
           libarchive
@@ -38,6 +39,7 @@ module RuboCop
           ncompress
           ncurses
           net-snmp
+          netcat
           openldap
           openlibm
           pod2man

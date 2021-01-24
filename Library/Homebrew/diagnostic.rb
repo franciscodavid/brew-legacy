@@ -707,20 +707,6 @@ module Homebrew
         message
       end
 
-      def check_for_bad_python_symlink
-        return unless which "python"
-
-        `python -V 2>&1` =~ /Python (\d+)\./
-        # This won't be the right warning if we matched nothing at all
-        return if Regexp.last_match(1).nil?
-        return if Regexp.last_match(1) == "2"
-
-        <<~EOS
-          python is symlinked to python#{Regexp.last_match(1)}
-          This will confuse build scripts and in general lead to subtle breakage.
-        EOS
-      end
-
       def check_for_non_prefixed_coreutils
         coreutils = Formula["coreutils"]
         return unless coreutils.any_version_installed?
@@ -907,7 +893,7 @@ module Homebrew
 
         add_info "Homebrew Cask Staging Location", user_tilde(path.to_s)
 
-        return unless path.exist? && !path.writable?
+        return if !path.exist? || path.writable?
 
         <<~EOS
           The staging path #{user_tilde(path.to_s)} is not writable by the current user.

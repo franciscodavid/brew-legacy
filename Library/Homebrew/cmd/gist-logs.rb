@@ -18,9 +18,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def gist_logs_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `gist-logs` [<options>] <formula>
-
+      description <<~EOS
         Upload logs for a failed build of <formula> to a new Gist. Presents an
         error message if no logs are found.
       EOS
@@ -33,7 +31,7 @@ module Homebrew
              description: "The Gist will be marked private and will not appear in listings but will "\
                           "be accessible with its link."
 
-      named :formula
+      named_args :formula, number: 1
     end
   end
 
@@ -57,7 +55,7 @@ module Homebrew
       files["00.tap.out"] = { content: tap }
     end
 
-    odisabled "`brew gist-logs` with a password", "HOMEBREW_GITHUB_API_TOKEN" if GitHub.api_credentials_type == :none
+    odie "`brew gist-logs` requires HOMEBREW_GITHUB_API_TOKEN to be set!" if GitHub.api_credentials_type == :none
 
     # Description formatted to work well as page title when viewing gist
     descr = if f.core_formula?
@@ -92,14 +90,6 @@ module Homebrew
     system "stty echo"
     puts
     result
-  end
-
-  def login!
-    print "GitHub User: "
-    ENV["HOMEBREW_GITHUB_API_USERNAME"] = $stdin.gets.chomp
-    print "Password: "
-    ENV["HOMEBREW_GITHUB_API_PASSWORD"] = noecho_gets.chomp
-    puts
   end
 
   def load_logs(dir)

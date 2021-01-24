@@ -16,9 +16,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def create_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `create` [<options>] <URL>
-
+      description <<~EOS
         Generate a formula or, with `--cask`, a cask for the downloadable file at <URL>
         and open it in the editor. Homebrew will attempt to automatically derive the
         formula name and version, but if it fails, you'll have to make your own template.
@@ -68,9 +66,8 @@ module Homebrew
                 "--perl", "--python", "--ruby", "--rust", "--cask"
       conflicts "--cask", "--HEAD"
       conflicts "--cask", "--set-license"
-      conflicts "--cask", "--tap"
 
-      named 1
+      named_args :url, number: 1
     end
   end
 
@@ -94,7 +91,11 @@ module Homebrew
       raise UsageError, "The `--set-name` flag is required for creating casks."
     end
 
-    cask_path = Cask::CaskLoader.path(token)
+    cask_tap = Tap.fetch(args.tap || "homebrew/cask")
+    raise TapUnavailableError, args.tap unless cask_tap.installed?
+
+    cask_path = Cask::CaskLoader.path("#{cask_tap}/#{token}")
+    cask_path.dirname.mkpath unless cask_path.dirname.exist?
     raise Cask::CaskAlreadyCreatedError, token if cask_path.exist?
 
     version = if args.set_version
@@ -142,7 +143,7 @@ module Homebrew
     fc.version = args.set_version
     fc.license = args.set_license
     fc.tap = Tap.fetch(args.tap || "homebrew/core")
-    raise TapUnavailableError, tap unless fc.tap.installed?
+    raise TapUnavailableError, args.tap unless fc.tap.installed?
 
     fc.url = args.named.first # Pull the first (and only) url from ARGV
 

@@ -67,6 +67,7 @@ module Cask
       check_single_uninstall_zap
       check_untrusted_pkg
       check_hosting_with_appcast
+      check_appcast_and_livecheck
       check_latest_with_appcast_or_livecheck
       check_latest_with_auto_updates
       check_stanza_requires_uninstall
@@ -154,7 +155,7 @@ module Cask
       return if tap.nil?
       return if tap.user != "Homebrew"
 
-      return unless cask.artifacts.any? { |k| k.is_a?(Artifact::Pkg) && k.stanza_options.key?(:allow_untrusted) }
+      return if cask.artifacts.none? { |k| k.is_a?(Artifact::Pkg) && k.stanza_options.key?(:allow_untrusted) }
 
       add_error "allow_untrusted is not permitted in official Homebrew Cask taps"
     end
@@ -248,6 +249,7 @@ module Cask
       return unless cask.sha256
 
       check_sha256_no_check_if_latest
+      check_sha256_no_check_if_unversioned
       check_sha256_actually_256
       check_sha256_invalid
     end
@@ -258,6 +260,12 @@ module Cask
       return if cask.sha256 == :no_check
 
       add_error "you should use sha256 :no_check when version is :latest"
+    end
+
+    def check_sha256_no_check_if_unversioned
+      return if cask.sha256 == :no_check
+
+      add_error "Use `sha256 :no_check` when URL is unversioned." if cask.url&.unversioned?
     end
 
     def check_sha256_actually_256
@@ -276,30 +284,32 @@ module Cask
       add_error "cannot use the sha256 for an empty string: #{empty_sha256}"
     end
 
+    def check_appcast_and_livecheck
+      return unless cask.appcast
+
+      add_error "Cask has a `livecheck`, the `appcast` should be removed." if cask.livecheckable?
+    end
+
     def check_latest_with_appcast_or_livecheck
       return unless cask.version.latest?
 
-      add_error "Casks with an appcast should not use version :latest" if cask.appcast
-      add_error "Casks with a livecheck should not use version :latest" if cask.livecheckable?
+      add_error "Casks with an `appcast` should not use `version :latest`." if cask.appcast
+      add_error "Casks with a `livecheck` should not use `version :latest`." if cask.livecheckable?
     end
 
     def check_latest_with_auto_updates
       return unless cask.version.latest?
       return unless cask.auto_updates
 
-      add_error "Casks with `version :latest` should not use `auto_updates`"
+      add_error "Casks with `version :latest` should not use `auto_updates`."
     end
 
     def check_hosting_with_appcast
-      return if cask.appcast
+      return if cask.appcast || cask.livecheckable?
 
       add_appcast = "please add an appcast. See https://github.com/Homebrew/homebrew-cask/blob/HEAD/doc/cask_language_reference/stanzas/appcast.md"
 
       case cask.url.to_s
-      when %r{github.com/([^/]+)/([^/]+)/releases/download/(\S+)}
-        return if cask.version.latest?
-
-        add_error "Download uses GitHub releases, #{add_appcast}"
       when %r{sourceforge.net/(\S+)}
         return if cask.version.latest?
 
@@ -359,7 +369,7 @@ module Cask
     end
 
     def url_match_homepage?
-      host = cask.url.to_s.downcase
+      host = cask.url.to_s
       host_uri = URI(host)
       host = if host.match?(/:\d/) && host_uri.port != 80
         "#{host_uri.host}:#{host_uri.port}"
@@ -377,23 +387,27 @@ module Cask
     end
 
     def strip_url_scheme(url)
-      url.sub(%r{^.*://(www\.)?}, "")
+      url.sub(%r{^[^:/]+://(www\.)?}, "")
     end
 
     def url_from_verified
-      cask.url.verified.sub(%r{^https?://}, "")
+      strip_url_scheme(cask.url.verified)
     end
 
     def verified_matches_url?
-      strip_url_scheme(cask.url.to_s).start_with?(url_from_verified)
+      url_domain, url_path = strip_url_scheme(cask.url.to_s).split("/", 2)
+      verified_domain, verified_path = url_from_verified.split("/", 2)
+
+      (url_domain == verified_domain || (verified_domain && url_domain&.end_with?(".#{verified_domain}"))) &&
+        (!verified_path || url_path&.start_with?(verified_path))
     end
 
     def verified_present?
       cask.url.verified.present?
     end
 
-    def url_includes_file?
-      cask.url.to_s.start_with?("file://")
+    def file_url?
+      URI(cask.url.to_s).scheme == "file"
     end
 
     def check_unnecessary_verified
@@ -401,19 +415,20 @@ module Cask
       return unless url_match_homepage?
       return unless verified_matches_url?
 
-      add_warning "The URL's #{domain} matches the homepage #{homepage}, " \
-                  "the `verified` parameter of the `url` stanza is unnecessary. " \
-                  "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
+      add_error "The URL's domain #{domain} matches the homepage domain #{homepage}, " \
+                "the `verified` parameter of the `url` stanza is unnecessary. " \
+                "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
     def check_missing_verified
       return if cask.url.from_block?
-      return if url_includes_file?
+      return if file_url?
       return if url_match_homepage?
       return if verified_present?
 
-      add_warning "#{domain} does not match #{homepage}, a `verified` parameter of the `url` has to be added. " \
-                  " See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
+      add_error "The URL's domain #{domain} does not match the homepage domain #{homepage}, " \
+                "a `verified` parameter has to be added to the `url` stanza. " \
+                "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
     def check_no_match
@@ -421,8 +436,8 @@ module Cask
       return unless verified_present?
       return if !url_match_homepage? && verified_matches_url?
 
-      add_warning "#{url_from_verified} does not match #{strip_url_scheme(cask.url.to_s)}. " \
-                  "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
+      add_error "Verified URL #{url_from_verified} does not match URL #{strip_url_scheme(cask.url.to_s)}. " \
+                "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
     def check_generic_artifacts
@@ -460,7 +475,7 @@ module Cask
         add_error "cask token should only contain lowercase alphanumeric characters and hyphens"
       end
 
-      return unless cask.token.start_with?("-") || cask.token.end_with?("-")
+      return if !cask.token.start_with?("-") && !cask.token.end_with?("-")
 
       add_error "cask token should not have leading or trailing hyphens"
     end
@@ -486,7 +501,8 @@ module Cask
 
       add_warning "cask token mentions architecture" if token.end_with? "x86", "32_bit", "x86_64", "64_bit"
 
-      return unless token.end_with?("cocoa", "qt", "gtk", "wx", "java") && %w[cocoa qt gtk wx java].exclude?(token)
+      frameworks = %w[cocoa qt gtk wx java]
+      return if frameworks.include?(token) || !token.end_with?(*frameworks)
 
       add_warning "cask token mentions framework"
     end
@@ -505,7 +521,7 @@ module Cask
     end
 
     def check_download
-      return unless download && cask.url
+      return if download.blank? || cask.url.blank?
 
       odebug "Auditing download"
       download.fetch
@@ -570,7 +586,7 @@ module Cask
 
       tag = SharedAudits.gitlab_tag_from_url(cask.url)
       tag ||= cask.version
-      error = SharedAudits.gitlab_release(user, repo, tag)
+      error = SharedAudits.gitlab_release(user, repo, tag, cask: cask)
       add_error error if error
     end
 

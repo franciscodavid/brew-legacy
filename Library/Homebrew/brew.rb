@@ -85,16 +85,14 @@ begin
   ENV["PATH"] = path
 
   require "commands"
+  require "settings"
 
   if cmd
     internal_cmd = Commands.valid_internal_cmd?(cmd)
     internal_cmd ||= begin
       internal_dev_cmd = Commands.valid_internal_dev_cmd?(cmd)
       if internal_dev_cmd && !Homebrew::EnvConfig.developer?
-        if (HOMEBREW_REPOSITORY/".git/config").exist?
-          system "git", "config", "--file=#{HOMEBREW_REPOSITORY}/.git/config",
-                 "--replace-all", "homebrew.devcmdrun", "true"
-        end
+        Homebrew::Settings.write "devcmdrun", true
         ENV["HOMEBREW_DEV_CMD_RUN"] = "1"
       end
       internal_dev_cmd
@@ -134,7 +132,9 @@ begin
     possible_tap = OFFICIAL_CMD_TAPS.find { |_, cmds| cmds.include?(cmd) }
     possible_tap = Tap.fetch(possible_tap.first) if possible_tap
 
-    odie "Unknown command: #{cmd}" if !possible_tap || possible_tap.installed?
+    if !possible_tap || possible_tap.installed? || Tap.untapped_official_taps.include?(possible_tap.name)
+      odie "Unknown command: #{cmd}"
+    end
 
     # Unset HOMEBREW_HELP to avoid confusing the tap
     with_env HOMEBREW_HELP: nil do

@@ -14,9 +14,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def list_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `list`, `ls` [<options>] [<formula>|<cask>]
-
+      description <<~EOS
         List all installed formulae and casks.
 
         If <formula> is provided, summarise the paths within its current keg.
@@ -47,11 +45,13 @@ module Homebrew
              description: "Force output to be one entry per line. " \
                           "This is the default when output is not to a terminal."
       switch "-l",
-             description: "List formulae in long format. If the output is to a terminal, "\
-                          "a total sum for all the file sizes is printed before the long listing."
+             depends_on:  "--formula",
+             description: "List formulae in long format."
       switch "-r",
+             depends_on:  "--formula",
              description: "Reverse the order of the formulae sort to list the oldest entries first."
       switch "-t",
+             depends_on:  "--formula",
              description: "Sort formulae by time modified, listing most recently modified first."
 
       conflicts "--formula", "--cask"
@@ -70,6 +70,8 @@ module Homebrew
         conflicts "--full-name", flag
         conflicts "--cask", flag
       end
+
+      named_args [:installed_formula, :installed_cask]
     end
   end
 
@@ -115,8 +117,7 @@ module Homebrew
       ls_args << "-t" if args.t?
 
       if !$stdout.tty? && !args.formula? && !args.cask?
-        odeprecated "`brew list` to only list formulae", "`brew list --formula`"
-        safe_system "ls", *ls_args, HOMEBREW_CELLAR
+        odisabled "`brew list` to only list formulae", "`brew list --formula`"
       else
         safe_system "ls", *ls_args, HOMEBREW_CELLAR unless args.cask?
         list_casks(args: args) unless args.formula?

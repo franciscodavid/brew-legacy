@@ -12,9 +12,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def dispatch_build_bottle_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `dispatch-build-bottle` [<options>] <formula> [<formula> ...]
-
+      description <<~EOS
         Build bottles for these formulae with GitHub Actions.
       EOS
       flag   "--tap=",
@@ -28,7 +26,7 @@ module Homebrew
       switch "--upload",
              description: "Upload built bottles to Bintray."
 
-      min_named :formula
+      named_args :formula, min: 1
     end
   end
 

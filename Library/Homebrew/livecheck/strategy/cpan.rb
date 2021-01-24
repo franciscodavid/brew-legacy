@@ -21,7 +21,13 @@ module Homebrew
         NICE_NAME = "CPAN"
 
         # The `Regexp` used to determine if the strategy applies to the URL.
-        URL_MATCH_REGEX = %r{^https?://cpan\.metacpan\.org/authors/id(?:/[^/]+){3,}/[^/]+}i.freeze
+        URL_MATCH_REGEX = %r{
+          ^https?://cpan\.metacpan\.org
+          (?<path>/authors/id(?:/[^/]+){3,}/) # Path before the filename
+          (?<prefix>[^/]+) # Filename text before the version
+          -v?\d+(?:\.\d+)* # The numeric version
+          (?<suffix>[^/]+) # Filename text after the version
+        }ix.freeze
 
         # Whether the strategy can be applied to the provided URL.
         #
@@ -37,24 +43,19 @@ module Homebrew
         # @param url [String] the URL of the content to check
         # @param regex [Regexp] a regex used for matching versions in content
         # @return [Hash]
-        def self.find_versions(url, regex = nil)
-          %r{
-            (?<path>/authors/id(?:/[^/]+){3,}/) # Path before the filename
-            (?<prefix>[^/]+) # Filename text before the version
-            -v?\d+(?:\.\d+)* # The numeric version
-            (?<suffix>[^/]+) # Filename text after the version
-          }ix =~ url
+        def self.find_versions(url, regex = nil, &block)
+          match = url.match(URL_MATCH_REGEX)
 
           # Use `\.t` instead of specific tarball extensions (e.g. .tar.gz)
-          suffix.sub!(/\.t(?:ar\..+|[a-z0-9]+)$/i, "\.t")
+          suffix = match[:suffix].sub(/\.t(?:ar\..+|[a-z0-9]+)$/i, "\.t")
 
           # The directory listing page where the archive files are found
-          page_url = "https://cpan.metacpan.org#{path}"
+          page_url = "https://cpan.metacpan.org#{match[:path]}"
 
           # Example regex: `/href=.*?Brew[._-]v?(\d+(?:\.\d+)*)\.t/i`
-          regex ||= /href=.*?#{prefix}[._-]v?(\d+(?:\.\d+)*)#{Regexp.escape(suffix)}/i
+          regex ||= /href=.*?#{match[:prefix]}[._-]v?(\d+(?:\.\d+)*)#{Regexp.escape(suffix)}/i
 
-          Homebrew::Livecheck::Strategy::PageMatch.find_versions(page_url, regex)
+          PageMatch.find_versions(page_url, regex, &block)
         end
       end
     end

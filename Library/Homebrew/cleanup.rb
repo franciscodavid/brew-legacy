@@ -94,7 +94,7 @@ module Homebrew
 
           if resource_name == "patch"
             patch_hashes = formula.stable&.patches&.select(&:external?)&.map(&:resource)&.map(&:version)
-            return true unless patch_hashes&.include?(Checksum.new(:sha256, version.to_s))
+            return true unless patch_hashes&.include?(Checksum.new(version.to_s))
           elsif resource_name && resource_version = formula.stable&.resources&.dig(resource_name)&.version
             return true if resource_version != version
           elsif version.is_a?(PkgVersion)
@@ -141,7 +141,7 @@ module Homebrew
 
     PERIODIC_CLEAN_FILE = (HOMEBREW_CACHE/".cleaned").freeze
 
-    attr_predicate :dry_run?, :scrub?
+    attr_predicate :dry_run?, :scrub?, :prune?
     attr_reader :args, :days, :cache, :disk_cleanup_size
 
     def initialize(*args, dry_run: false, scrub: false, days: nil, cache: HOMEBREW_CACHE)
@@ -149,6 +149,7 @@ module Homebrew
       @args = args
       @dry_run = dry_run
       @scrub = scrub
+      @prune = days.present?
       @days = days || Homebrew::EnvConfig.cleanup_max_age_days.to_i
       @cache = cache
       @cleaned_up_paths = Set.new
@@ -248,7 +249,7 @@ module Homebrew
     end
 
     def cleanup_keg(keg)
-      cleanup_path(keg) { keg.uninstall }
+      cleanup_path(keg) { keg.uninstall(raise_failures: true) }
     rescue Errno::EACCES => e
       opoo e.message
       unremovable_kegs << keg
@@ -316,7 +317,8 @@ module Homebrew
           next
         end
 
-        next cleanup_path(path) { path.unlink } if path.stale?(scrub: scrub?)
+        # If we've specifed --prune don't do the (expensive) .stale? check.
+        cleanup_path(path) { path.unlink } if !prune? && path.stale?(scrub: scrub?)
       end
 
       cleanup_unreferenced_downloads

@@ -6,6 +6,12 @@ require "livecheck/livecheck"
 describe Homebrew::Livecheck do
   subject(:livecheck) { described_class }
 
+  let(:cask_url) { "https://brew.sh/test-0.0.1.dmg" }
+  let(:head_url) { "https://github.com/Homebrew/brew.git" }
+  let(:homepage_url) { "https://brew.sh" }
+  let(:livecheck_url) { "https://formulae.brew.sh/api/formula/ruby.json" }
+  let(:stable_url) { "https://brew.sh/test-0.0.1.tgz" }
+
   let(:f) do
     formula("test") do
       desc "Test formula"
@@ -20,67 +26,14 @@ describe Homebrew::Livecheck do
     end
   end
 
-  let(:f_deprecated) do
-    formula("test_deprecated") do
-      desc "Deprecated test formula"
-      homepage "https://brew.sh"
-      url "https://brew.sh/test-0.0.1.tgz"
-      deprecate! because: :unmaintained
-    end
-  end
-
-  let(:f_disabled) do
-    formula("test_disabled") do
-      desc "Disabled test formula"
-      homepage "https://brew.sh"
-      url "https://brew.sh/test-0.0.1.tgz"
-      disable! because: :unmaintained
-    end
-  end
-
-  let(:f_gist) do
-    formula("test_gist") do
-      desc "Gist test formula"
-      homepage "https://brew.sh"
-      url "https://gist.github.com/Homebrew/0000000000"
-    end
-  end
-
-  let(:f_head_only) do
-    formula("test_head_only") do
-      desc "HEAD-only test formula"
-      homepage "https://brew.sh"
-      head "https://github.com/Homebrew/brew.git"
-    end
-  end
-
-  let(:f_skip) do
-    formula("test_skip") do
-      desc "Skipped test formula"
-      homepage "https://brew.sh"
-      url "https://brew.sh/test-0.0.1.tgz"
-
-      livecheck do
-        skip "Not maintained"
-      end
-    end
-  end
-
-  let(:f_versioned) do
-    formula("test@0.0.1") do
-      desc "Versioned test formula"
-      homepage "https://brew.sh"
-      url "https://brew.sh/test-0.0.1.tgz"
-    end
-  end
-
   let(:c) do
     Cask::CaskLoader.load(+<<-RUBY)
       cask "test" do
         version "0.0.1,2"
 
-        url "https://brew.sh/test-0.0.1.tgz"
+        url "https://brew.sh/test-0.0.1.dmg"
         name "Test"
+        desc "Test cask"
         homepage "https://brew.sh"
 
         livecheck do
@@ -125,59 +78,63 @@ describe Homebrew::Livecheck do
     end
   end
 
-  describe "::skip_conditions" do
-    it "skips a deprecated formula without a livecheckable" do
-      expect { livecheck.skip_conditions(f_deprecated) }
-        .to output("test_deprecated : deprecated\n").to_stdout
-        .and not_to_output.to_stderr
+  describe "::livecheck_url_to_string" do
+    let(:f_livecheck_url) do
+      formula("test_livecheck_url") do
+        desc "Test Livecheck URL formula"
+        homepage "https://brew.sh"
+        url "https://brew.sh/test-0.0.1.tgz"
+        head "https://github.com/Homebrew/brew.git"
+      end
     end
 
-    it "skips a disabled formula without a livecheckable" do
-      expect { livecheck.skip_conditions(f_disabled) }
-        .to output("test_disabled : disabled\n").to_stdout
-        .and not_to_output.to_stderr
+    let(:c_livecheck_url) do
+      Cask::CaskLoader.load(+<<-RUBY)
+        cask "test_livecheck_url" do
+          version "0.0.1,2"
+
+          url "https://brew.sh/test-0.0.1.dmg"
+          name "Test"
+          desc "Test Livecheck URL cask"
+          homepage "https://brew.sh"
+        end
+      RUBY
     end
 
-    it "skips a versioned formula without a livecheckable" do
-      expect { livecheck.skip_conditions(f_versioned) }
-        .to output("test@0.0.1 : versioned\n").to_stdout
-        .and not_to_output.to_stderr
+    it "returns a URL string when given a livecheck_url string" do
+      f_livecheck_url.livecheck.url(livecheck_url)
+      expect(livecheck.livecheck_url_to_string(livecheck_url, f_livecheck_url)).to eq(livecheck_url)
     end
 
-    it "skips a HEAD-only formula if not installed" do
-      expect { livecheck.skip_conditions(f_head_only) }
-        .to output("test_head_only : HEAD only formula must be installed to be livecheckable\n").to_stdout
-        .and not_to_output.to_stderr
+    it "returns a URL symbol when given a valid livecheck_url symbol" do
+      f_livecheck_url.livecheck.url(:head)
+      expect(livecheck.livecheck_url_to_string(head_url, f_livecheck_url)).to eq(head_url)
+
+      f_livecheck_url.livecheck.url(:homepage)
+      expect(livecheck.livecheck_url_to_string(homepage_url, f_livecheck_url)).to eq(homepage_url)
+
+      c_livecheck_url.livecheck.url(:homepage)
+      expect(livecheck.livecheck_url_to_string(homepage_url, c_livecheck_url)).to eq(homepage_url)
+
+      f_livecheck_url.livecheck.url(:stable)
+      expect(livecheck.livecheck_url_to_string(stable_url, f_livecheck_url)).to eq(stable_url)
+
+      c_livecheck_url.livecheck.url(:url)
+      expect(livecheck.livecheck_url_to_string(cask_url, c_livecheck_url)).to eq(cask_url)
     end
 
-    it "skips a formula with a GitHub Gist stable URL" do
-      expect { livecheck.skip_conditions(f_gist) }
-        .to output("test_gist : skipped - Stable URL is a GitHub Gist\n").to_stdout
-        .and not_to_output.to_stderr
-    end
-
-    it "skips a formula with a skip livecheckable" do
-      expect { livecheck.skip_conditions(f_skip) }
-        .to output("test_skip : skipped - Not maintained\n").to_stdout
-        .and not_to_output.to_stderr
-    end
-
-    it "returns false for a non-skippable formula" do
-      expect(livecheck.skip_conditions(f)).to eq(false)
-    end
-
-    it "returns false for a non-skippable cask" do
-      expect(livecheck.skip_conditions(c)).to eq(false)
+    it "returns nil when not given a string or valid symbol" do
+      expect(livecheck.livecheck_url_to_string(nil, f_livecheck_url)).to eq(nil)
+      expect(livecheck.livecheck_url_to_string(nil, c_livecheck_url)).to eq(nil)
+      expect(livecheck.livecheck_url_to_string(:invalid_symbol, f_livecheck_url)).to eq(nil)
+      expect(livecheck.livecheck_url_to_string(:invalid_symbol, c_livecheck_url)).to eq(nil)
     end
   end
 
   describe "::checkable_urls" do
     it "returns the list of URLs to check" do
-      expect(livecheck.checkable_urls(f))
-        .to eq(
-          ["https://github.com/Homebrew/brew.git", "https://brew.sh/test-0.0.1.tgz", "https://brew.sh"],
-        )
-      expect(livecheck.checkable_urls(c)).to eq(["https://brew.sh/test-0.0.1.tgz", "https://brew.sh"])
+      expect(livecheck.checkable_urls(f)).to eq([head_url, stable_url, homepage_url])
+      expect(livecheck.checkable_urls(c)).to eq([cask_url, homepage_url])
     end
   end
 

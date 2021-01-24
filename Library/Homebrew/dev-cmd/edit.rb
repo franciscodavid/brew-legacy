@@ -12,9 +12,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def edit_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `edit` [<formula>|<cask>]
-
+      description <<~EOS
         Open a <formula> or <cask> in the editor set by `EDITOR` or `HOMEBREW_EDITOR`,
         or open the Homebrew repository for editing if no formula is provided.
       EOS
@@ -24,15 +22,14 @@ module Homebrew
       switch "--cask", "--casks",
              description: "Treat all named arguments as casks."
       conflicts "--formula", "--cask"
+
+      named_args [:formula, :cask]
     end
   end
 
   sig { void }
   def edit
     args = edit_args.parse
-
-    only = :formula if args.formula? && !args.cask?
-    only = :cask if args.cask? && !args.formula?
 
     unless (HOMEBREW_REPOSITORY/".git").directory?
       raise <<~EOS
@@ -42,7 +39,7 @@ module Homebrew
       EOS
     end
 
-    paths = args.named.to_paths(only: only).select do |path|
+    paths = args.named.to_paths.select do |path|
       next path if path.exist?
 
       raise UsageError, "#{path} doesn't exist on disk. " \

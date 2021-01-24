@@ -39,7 +39,7 @@ class Build
   def post_superenv_hacks
     # Only allow Homebrew-approved directories into the PATH, unless
     # a formula opts-in to allowing the user's path.
-    return unless formula.env.userpaths? || reqs.any? { |rq| rq.env.userpaths? }
+    return if !formula.env.userpaths? && reqs.none? { |rq| rq.env.userpaths? }
 
     ENV.userpaths!
   end
@@ -87,7 +87,6 @@ class Build
       ENV.keg_only_deps = keg_only_deps
       ENV.deps = formula_deps
       ENV.run_time_deps = run_time_deps
-      ENV.x11 = reqs.any? { |rq| rq.is_a?(X11Requirement) }
       ENV.setup_build_environment(
         formula:      formula,
         cc:           args.cc,
