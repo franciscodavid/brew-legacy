@@ -209,7 +209,7 @@ class Tap
     return "N/A" unless installed?
 
     pretty_revision = git_short_head
-    return "(no git repository)" unless pretty_revision
+    return "(no Git repository)" unless pretty_revision
 
     "(git revision #{pretty_revision}; last commit #{git_last_commit_date})"
   end
@@ -360,6 +360,22 @@ class Tap
     else
       Utils::Link.unlink_completions(path)
     end
+  end
+
+  def fix_remote_configuration
+    return unless remote.include? "github.com"
+
+    current_upstream_head = path.git_origin_branch
+    return if path.git_origin_has_branch? current_upstream_head
+
+    safe_system "git", "-C", path, "fetch", "origin"
+    path.git_origin_set_head_auto
+
+    new_upstream_head = path.git_origin_branch
+    path.git_rename_branch old: current_upstream_head, new: new_upstream_head
+    path.git_branch_set_upstream local: new_upstream_head, origin: new_upstream_head
+
+    ohai "#{name}: changed default branch name from #{current_upstream_head} to #{new_upstream_head}!"
   end
 
   # Uninstall this {Tap}.

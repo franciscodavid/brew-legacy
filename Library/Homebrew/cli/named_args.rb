@@ -50,6 +50,12 @@ module Homebrew
         @to_formulae_and_casks ||= {}
         @to_formulae_and_casks[only] ||= downcased_unique_named.flat_map do |name|
           load_formula_or_cask(name, only: only, method: method)
+        rescue FormulaUnreadableError, FormulaClassUnavailableError,
+               TapFormulaUnreadableError, TapFormulaClassUnavailableError,
+               Cask::CaskUnreadableError
+          # Need to rescue before `*UnavailableError` (superclass of this)
+          # The formula/cask was found, but there's a problem with its implementation
+          raise
         rescue NoSuchKegError, FormulaUnavailableError, Cask::CaskUnavailableError
           ignore_unavailable ? [] : raise
         end.uniq.freeze
@@ -72,6 +78,8 @@ module Homebrew
       end
 
       def load_formula_or_cask(name, only: nil, method: nil)
+        unreadable_error = nil
+
         if only != :cask
           begin
             formula = case method
@@ -90,6 +98,11 @@ module Homebrew
 
             warn_if_cask_conflicts(name, "formula") unless only == :formula
             return formula
+          rescue FormulaUnreadableError, FormulaClassUnavailableError,
+                 TapFormulaUnreadableError, TapFormulaClassUnavailableError => e
+            # Need to rescue before `FormulaUnavailableError` (superclass of this)
+            # The formula was found, but there's a problem with its implementation
+            unreadable_error ||= e
           rescue NoSuchKegError, FormulaUnavailableError => e
             raise e if only == :formula
           end
@@ -97,11 +110,27 @@ module Homebrew
 
         if only != :formula
           begin
-            return Cask::CaskLoader.load(name, config: Cask::Config.from_args(@parent))
+            cask = Cask::CaskLoader.load(name, config: Cask::Config.from_args(@parent))
+
+            if unreadable_error.present?
+              onoe <<~EOS
+                Failed to load formula: #{name}
+                #{unreadable_error}
+              EOS
+              opoo "Treating #{name} as a cask."
+            end
+
+            return cask
+          rescue Cask::CaskUnreadableError => e
+            # Need to rescue before `CaskUnavailableError` (superclass of this)
+            # The cask was found, but there's a problem with its implementation
+            unreadable_error ||= e
           rescue Cask::CaskUnavailableError => e
             raise e if only == :cask
           end
         end
+
+        raise unreadable_error if unreadable_error.present?
 
         raise FormulaOrCaskUnavailableError, name
       end
@@ -268,12 +297,22 @@ module Homebrew
       end
 
       def warn_if_cask_conflicts(ref, loaded_type)
-        cask = Cask::CaskLoader.load ref
         message = "Treating #{ref} as a #{loaded_type}."
-        message += " For the cask, use #{cask.tap.name}/#{cask.token}" if cask.tap.present?
+        begin
+          cask = Cask::CaskLoader.load ref
+          message += " For the cask, use #{cask.tap.name}/#{cask.token}" if cask.tap.present?
+        rescue Cask::CaskUnreadableError => e
+          # Need to rescue before `CaskUnavailableError` (superclass of this)
+          # The cask was found, but there's a problem with its implementation
+          onoe <<~EOS
+            Failed to load cask: #{ref}
+            #{e}
+          EOS
+        rescue Cask::CaskUnavailableError
+          # No ref conflict with a cask, do nothing
+          return
+        end
         opoo message.freeze
-      rescue Cask::CaskUnavailableError
-        # No ref conflict with a cask, do nothing
       end
     end
   end

@@ -91,12 +91,6 @@ module Homebrew
           valid_alias_names.map! { |a| "#{formula.tap}/#{a}" }
         end
 
-        # Fix naming based on what people expect.
-        if alias_name_major_minor == "adoptopenjdk@1.8"
-          valid_alias_names << "adoptopenjdk@8"
-          valid_alias_names.delete "adoptopenjdk@1"
-        end
-
         valid_versioned_aliases = versioned_aliases & valid_alias_names
         invalid_versioned_aliases = versioned_aliases - valid_alias_names
 
@@ -221,13 +215,13 @@ module Homebrew
             # Don't complain about missing cross-tap dependencies
             next
           rescue FormulaUnavailableError
-            problem "Can't find dependency #{dep.name.inspect}."
+            problem "Can't find dependency '#{dep.name.inspect}'."
             next
           rescue TapFormulaAmbiguityError
-            problem "Ambiguous dependency #{dep.name.inspect}."
+            problem "Ambiguous dependency '#{dep.name.inspect}'."
             next
           rescue TapFormulaWithOldnameAmbiguityError
-            problem "Ambiguous oldname dependency #{dep.name.inspect}."
+            problem "Ambiguous oldname dependency '#{dep.name.inspect}'."
             next
           end
 
@@ -258,10 +252,10 @@ module Homebrew
               end
             end
 
-            problem "Dependency #{dep} does not define option #{opt.name.inspect}"
+            problem "Dependency '#{dep}' does not define option #{opt.name.inspect}"
           end
 
-          problem "Don't use git as a dependency (it's always available)" if @new_formula && dep.name == "git"
+          problem "Don't use 'git' as a dependency (it's always available)" if @new_formula && dep.name == "git"
 
           problem "Dependency '#{dep.name}' is marked as :run. Remove :run; it is a no-op." if dep.tags.include?(:run)
 

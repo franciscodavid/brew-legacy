@@ -48,6 +48,7 @@ module Cask
 
     def run!
       check_denylist
+      check_reverse_migration
       check_required_stanzas
       check_version
       check_sha256
@@ -82,7 +83,7 @@ module Cask
       check_bitbucket_repository
       self
     rescue => e
-      odebug "#{e.message}\n#{e.backtrace.join("\n")}"
+      odebug e, e.backtrace
       add_error "exception while auditing #{cask}: #{e.message}"
       self
     end
@@ -416,7 +417,7 @@ module Cask
       return unless verified_matches_url?
 
       add_error "The URL's domain #{domain} matches the homepage domain #{homepage}, " \
-                "the `verified` parameter of the `url` stanza is unnecessary. " \
+                "the 'verified' parameter of the 'url' stanza is unnecessary. " \
                 "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
@@ -427,14 +428,13 @@ module Cask
       return if verified_present?
 
       add_error "The URL's domain #{domain} does not match the homepage domain #{homepage}, " \
-                "a `verified` parameter has to be added to the `url` stanza. " \
+                "a 'verified' parameter has to be added to the 'url' stanza. " \
                 "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
     def check_no_match
-      return if url_match_homepage?
       return unless verified_present?
-      return if !url_match_homepage? && verified_matches_url?
+      return if verified_matches_url?
 
       add_error "Verified URL #{url_from_verified} does not match URL #{strip_url_scheme(cask.url.to_s)}. " \
                 "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
@@ -680,10 +680,20 @@ module Cask
     end
 
     def check_denylist
-      return unless cask.tap&.official?
+      return unless cask.tap
+      return unless cask.tap.official?
       return unless reason = Denylist.reason(cask.token)
 
       add_error "#{cask.token} is not allowed: #{reason}"
+    end
+
+    def check_reverse_migration
+      return unless new_cask?
+      return unless cask.tap
+      return unless cask.tap.official?
+      return unless cask.tap.tap_migrations.key?(cask.token)
+
+      add_error "#{cask.token} is listed in tap_migrations.json"
     end
 
     def check_https_availability

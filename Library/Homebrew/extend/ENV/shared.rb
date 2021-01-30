@@ -241,6 +241,8 @@ module SharedEnvExtension
   # Currently only used by aalib in core.
   sig { void }
   def ncurses_define
+    # odeprecated "ENV.ncurses_define"
+
     append "CPPFLAGS", "-DNCURSES_OPAQUE=0"
   end
 
@@ -276,14 +278,13 @@ module SharedEnvExtension
     flags = []
 
     if fc
-      ohai "Building with an alternative Fortran compiler"
-      puts "This is unsupported."
+      ohai "Building with an alternative Fortran compiler", "This is unsupported."
       self["F77"] ||= fc
     else
       if (gfortran = which("gfortran", (HOMEBREW_PREFIX/"bin").to_s))
-        ohai "Using Homebrew-provided Fortran compiler."
+        ohai "Using Homebrew-provided Fortran compiler"
       elsif (gfortran = which("gfortran", PATH.new(ORIGINAL_PATHS)))
-        ohai "Using a Fortran compiler found at #{gfortran}."
+        ohai "Using a Fortran compiler found at #{gfortran}"
       end
       if gfortran
         puts "This may be changed by setting the FC environment variable."

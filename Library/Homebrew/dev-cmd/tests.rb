@@ -44,18 +44,17 @@ module Homebrew
     require "byebug" if args.byebug?
 
     HOMEBREW_LIBRARY_PATH.cd do
-      ENV.delete("HOMEBREW_COLOR")
-      ENV.delete("HOMEBREW_NO_COLOR")
-      ENV.delete("HOMEBREW_VERBOSE")
-      ENV.delete("HOMEBREW_DEBUG")
-      ENV.delete("VERBOSE")
-      ENV.delete("HOMEBREW_CASK_OPTS")
-      ENV.delete("HOMEBREW_TEMP")
-      ENV.delete("HOMEBREW_NO_GITHUB_API")
-      ENV.delete("HOMEBREW_NO_EMOJI")
-      ENV.delete("HOMEBREW_DEVELOPER")
-      ENV.delete("HOMEBREW_PRY")
-      ENV.delete("HOMEBREW_BAT")
+      # Cleanup any unwanted user configuration.
+      allowed_test_env = [
+        "HOMEBREW_GITHUB_API_TOKEN",
+        "HOMEBREW_TEMP",
+      ]
+      Homebrew::EnvConfig::ENVS.keys.map(&:to_s).each do |env|
+        next if allowed_test_env.include?(env)
+
+        ENV.delete(env)
+      end
+
       ENV["HOMEBREW_NO_ANALYTICS_THIS_RUN"] = "1"
       ENV["HOMEBREW_NO_COMPAT"] = "1" if args.no_compat?
       ENV["HOMEBREW_TEST_GENERIC_OS"] = "1" if args.generic?
@@ -67,6 +66,9 @@ module Homebrew
       # Avoid local configuration messing with tests, e.g. git being configured
       # to use GPG to sign by default
       ENV["HOME"] = "#{HOMEBREW_LIBRARY_PATH}/test"
+
+      # Print verbose output when requesting debug or verbose output.
+      ENV["HOMEBREW_VERBOSE_TESTS"] = "1" if args.debug? || args.verbose?
 
       if args.coverage?
         ENV["HOMEBREW_TESTS_COVERAGE"] = "1"
