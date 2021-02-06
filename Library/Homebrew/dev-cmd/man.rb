@@ -35,7 +35,9 @@ module Homebrew
 
   def man
     # TODO: update description above if removing this.
-    raise UsageError, "not (yet) working on Apple Silicon!" if Hardware::CPU.arm?
+    if !ENV["HOMEBREW_SILICON_DEVELOPER"] && Hardware::CPU.arm?
+      raise UsageError, "not (yet) working on Apple Silicon!"
+    end
 
     args = man_args.parse
 
@@ -67,7 +69,7 @@ module Homebrew
     template = (SOURCE_PATH/"brew.1.md.erb").read
     variables = OpenStruct.new
 
-    variables[:commands] = generate_cmd_manpages(Commands.internal_commands_paths(cask: false))
+    variables[:commands] = generate_cmd_manpages(Commands.internal_commands_paths)
     variables[:developer_commands] = generate_cmd_manpages(Commands.internal_developer_commands_paths)
     variables[:official_external_commands] =
       generate_cmd_manpages(Commands.official_external_commands_paths(quiet: quiet))

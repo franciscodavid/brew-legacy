@@ -111,6 +111,23 @@ module Kernel
     puts sput
   end
 
+  def ohai_stdout_or_stderr(message, *sput)
+    if $stdout.tty?
+      ohai(message, *sput)
+    else
+      $stderr.puts(ohai_title(message))
+      $stderr.puts(sput)
+    end
+  end
+
+  def puts_stdout_or_stderr(*message)
+    if $stdout.tty?
+      puts(message)
+    else
+      $stderr.puts(message)
+    end
+  end
+
   def odebug(title, *sput, always_display: false)
     debug = if respond_to?(:debug)
       debug?
@@ -384,6 +401,8 @@ module Kernel
 
   # Returns array of architectures that the given command or library is built for.
   def archs_for_command(cmd)
+    odeprecated "archs_for_command"
+
     cmd = which(cmd) unless Pathname.new(cmd).absolute?
     Pathname.new(cmd).archs
   end

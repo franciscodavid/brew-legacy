@@ -335,7 +335,7 @@ module Homebrew
         Formula[previous_formula_name]
       rescue FormulaUnavailableError
         problem "Versioned #{previous_formula_name} in homebrew/core must be created for " \
-                "`brew-postgresql-upgrade-database` and `pg_upgrade` to work."
+                "`brew postgresql-upgrade-database` and `pg_upgrade` to work."
       end
     end
 
@@ -399,7 +399,7 @@ module Homebrew
     end
 
     def audit_github_repository_archived
-      return if formula.deprecated?
+      return if formula.deprecated? || formula.disabled?
 
       user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if @online
       return if user.blank?
@@ -411,7 +411,7 @@ module Homebrew
     end
 
     def audit_gitlab_repository_archived
-      return if formula.deprecated?
+      return if formula.deprecated? || formula.disabled?
 
       user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if @online
       return if user.blank?

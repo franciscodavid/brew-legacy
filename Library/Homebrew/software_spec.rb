@@ -356,7 +356,7 @@ class BottleSpecification
     if [HOMEBREW_DEFAULT_PREFIX,
         HOMEBREW_MACOS_ARM_DEFAULT_PREFIX,
         HOMEBREW_LINUX_DEFAULT_PREFIX].exclude?(prefix)
-      odeprecated "setting 'prefix' for bottles"
+      odisabled "setting 'prefix' for bottles"
     end
     @prefix = prefix
   end
@@ -435,7 +435,10 @@ class BottleSpecification
 
   def checksums
     tags = collector.keys.sort_by do |tag|
-      "#{OS::Mac::Version.from_symbol(tag)}_#{tag}"
+      version = OS::Mac::Version.from_symbol(tag)
+      # Give arm64 bottles a higher priority so they are first
+      priority = version.arch == :arm64 ? "2" : "1"
+      "#{priority}.#{version}_#{tag}"
     rescue MacOSVersionError
       # Sort non-MacOS tags below MacOS tags.
       "0.#{tag}"

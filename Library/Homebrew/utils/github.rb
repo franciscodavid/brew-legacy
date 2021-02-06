@@ -24,6 +24,11 @@ module GitHub
   ALL_SCOPES_URL = Formatter.url(
     "https://github.com/settings/tokens/new?scopes=#{ALL_SCOPES.join(",")}&description=Homebrew",
   ).freeze
+  CREATE_GITHUB_PAT_MESSAGE = <<~EOS
+    Create a GitHub personal access token:
+        #{ALL_SCOPES_URL}
+      #{Utils::Shell.set_variable_in_profile("HOMEBREW_GITHUB_API_TOKEN", "your_token_here")}
+  EOS
 
   # Generic API error.
   class Error < RuntimeError
@@ -44,9 +49,8 @@ module GitHub
       @github_message = github_message
       super <<~EOS
         GitHub API Error: #{github_message}
-        Try again in #{pretty_ratelimit_reset(reset)}, or create a personal access token:
-          #{ALL_SCOPES_URL}
-        #{Utils::Shell.set_variable_in_profile("HOMEBREW_GITHUB_API_TOKEN", "your_token_here")}
+        Try again in #{pretty_ratelimit_reset(reset)}, or:
+        #{CREATE_GITHUB_PAT_MESSAGE}
       EOS
     end
 
@@ -70,12 +74,19 @@ module GitHub
           The GitHub credentials in the macOS keychain may be invalid.
           Clear them with:
             printf "protocol=https\\nhost=github.com\\n" | git credential-osxkeychain erase
-          Or create a personal access token:
-            #{ALL_SCOPES_URL}
-          #{Utils::Shell.set_variable_in_profile("HOMEBREW_GITHUB_API_TOKEN", "your_token_here")}
+          #{CREATE_GITHUB_PAT_MESSAGE}
         EOS
       end
       super message.freeze
+    end
+  end
+
+  # Error when the user has no GitHub API credentials set at all (macOS keychain or envvar).
+  class MissingAuthenticationError < Error
+    def initialize
+      message = +"No GitHub credentials found in macOS Keychain or environment.\n"
+      message << CREATE_GITHUB_PAT_MESSAGE
+      super message
     end
   end
 
@@ -150,13 +161,11 @@ module GitHub
     return if response_headers.empty?
 
     scopes = response_headers["x-accepted-oauth-scopes"].to_s.split(", ")
-    return if scopes.present?
-
-    needed_human_scopes = needed_scopes.join(", ")
+    needed_scopes = Set.new(scopes || needed_scopes)
     credentials_scopes = response_headers["x-oauth-scopes"]
-    return if needed_human_scopes.blank? && credentials_scopes.blank?
+    return if needed_scopes.subset?(Set.new(credentials_scopes.to_s.split(", ")))
 
-    needed_human_scopes = "none" if needed_human_scopes.blank?
+    needed_scopes = needed_scopes.to_a.join(", ").presence || "none"
     credentials_scopes = "none" if credentials_scopes.blank?
 
     what = case api_credentials_type
@@ -168,11 +177,9 @@ module GitHub
 
     @api_credentials_error_message ||= onoe <<~EOS
       Your #{what} credentials do not have sufficient scope!
-      Scopes required: #{needed_human_scopes}
+      Scopes required: #{needed_scopes}
       Scopes present:  #{credentials_scopes}
-      Create a personal access token:
-        #{ALL_SCOPES_URL}
-      #{Utils::Shell.set_variable_in_profile("HOMEBREW_GITHUB_API_TOKEN", "your_token_here")}
+      #{CREATE_GITHUB_PAT_MESSAGE}
     EOS
   end
 
@@ -279,6 +286,8 @@ module GitHub
     when "401", "403"
       raise AuthenticationFailedError, message
     when "404"
+      raise MissingAuthenticationError if api_credentials_type == :none && scopes.present?
+
       raise HTTPNotFoundError, message
     when "422"
       errors = json&.[]("errors") || []
