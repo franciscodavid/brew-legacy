@@ -61,7 +61,7 @@ end
 
 # This can be used to match any given option against the given list of arguments:
 # * to add condition on interdependent options
-# * to ddd condition on mutually exclusive options
+# * to add condition on mutually exclusive options
 #
 # Usage examples (for `completion -n '...'`):
 # * `__fish_brew_opt -s --long` returns true if _either_ `-s` _or_ `--long` is present
@@ -387,12 +387,16 @@ __fish_brew_complete_arg 'bottle' -a '(__fish_brew_suggest_formulae_installed)'
 
 
 __fish_brew_complete_cmd 'bump' 'Display out-of-date brew formulae and the latest version available'
+__fish_brew_complete_arg 'bump' -l cask -d 'Check only casks'
 __fish_brew_complete_arg 'bump' -l debug -d 'Display any debugging information'
+__fish_brew_complete_arg 'bump' -l formula -d 'Check only formulae'
 __fish_brew_complete_arg 'bump' -l help -d 'Show this message'
 __fish_brew_complete_arg 'bump' -l limit -d 'Limit number of package results returned'
+__fish_brew_complete_arg 'bump' -l no-pull-requests -d 'Do not retrieve pull requests from GitHub'
 __fish_brew_complete_arg 'bump' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'bump' -l verbose -d 'Make some output more verbose'
 __fish_brew_complete_arg 'bump' -a '(__fish_brew_suggest_formulae_all)'
+__fish_brew_complete_arg 'bump' -a '(__fish_brew_suggest_casks_all)'
 
 
 __fish_brew_complete_cmd 'bump-cask-pr' 'Create a pull request to update cask with a new version'
@@ -1225,7 +1229,7 @@ __fish_brew_complete_arg 'sh' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'sh' -l verbose -d 'Make some output more verbose'
 
 
-__fish_brew_complete_cmd 'sponsors' 'Print a Markdown summary of Homebrew\'s GitHub Sponsors, suitable for pasting into a README'
+__fish_brew_complete_cmd 'sponsors' 'Update the list of GitHub Sponsors in the `Homebrew/brew` README'
 __fish_brew_complete_arg 'sponsors' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'sponsors' -l help -d 'Show this message'
 __fish_brew_complete_arg 'sponsors' -l quiet -d 'Make some output more quiet'
@@ -1437,6 +1441,13 @@ __fish_brew_complete_arg 'update-license-data' -l fail-if-not-changed -d 'Return
 __fish_brew_complete_arg 'update-license-data' -l help -d 'Show this message'
 __fish_brew_complete_arg 'update-license-data' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'update-license-data' -l verbose -d 'Make some output more verbose'
+
+
+__fish_brew_complete_cmd 'update-maintainers' 'Update the list of maintainers in the `Homebrew/brew` README'
+__fish_brew_complete_arg 'update-maintainers' -l debug -d 'Display any debugging information'
+__fish_brew_complete_arg 'update-maintainers' -l help -d 'Show this message'
+__fish_brew_complete_arg 'update-maintainers' -l quiet -d 'Make some output more quiet'
+__fish_brew_complete_arg 'update-maintainers' -l verbose -d 'Make some output more verbose'
 
 
 __fish_brew_complete_cmd 'update-python-resources' 'Update versions for PyPI resource blocks in formula'

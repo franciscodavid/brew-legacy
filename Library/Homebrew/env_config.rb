@@ -204,17 +204,12 @@ module Homebrew
         boolean:     true,
       },
       HOMEBREW_NO_AUTO_UPDATE:                {
-        description: "If set, do not automatically update before running " \
-                     "`brew install`, `brew upgrade` or `brew tap`.",
+        description: "If set, do not automatically update before running some commands e.g. " \
+                     "`brew install`, `brew upgrade` and `brew tap`.",
         boolean:     true,
       },
       HOMEBREW_NO_BOOTSNAP:                   {
         description: "If set, do not use Bootsnap to speed up repeated `brew` calls.",
-        boolean:     true,
-      },
-      HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK:     {
-        description: "If set, fail on the failure of installation from a bottle rather than " \
-                     "falling back to building from source.",
         boolean:     true,
       },
       HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: {

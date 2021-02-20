@@ -29,7 +29,7 @@ module SPDX
   end
 
   def latest_tag
-    @latest_tag ||= GitHub.open_api(API_URL)["tag_name"]
+    @latest_tag ||= GitHub::API.open_rest(API_URL)["tag_name"]
   end
 
   def download_latest_license_data!(to: DATA_PATH)
@@ -110,7 +110,7 @@ module SPDX
       else
         bracket = false
         license_expression.each do |expression|
-          expressions.push license_expression_to_string(Hash[*expression], bracket: true)
+          expressions.push license_expression_to_string([expression].to_h, bracket: true)
         end
       end
 

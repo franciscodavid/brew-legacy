@@ -296,6 +296,10 @@ class Tap
 
     $stderr.ohai "Tapping #{name}" unless quiet
     args =  %W[clone #{requested_remote} #{path}]
+
+    # Override possible user configs like:
+    #   git config --global clone.defaultRemoteName notorigin
+    args << "--origin=origin"
     args << "--depth=1" unless full_clone
     args << "-q" if quiet
 
@@ -688,9 +692,9 @@ class Tap
         else
           GitHub.private_repo?(full_name)
         end
-      rescue GitHub::HTTPNotFoundError
+      rescue GitHub::API::HTTPNotFoundError
         true
-      rescue GitHub::Error
+      rescue GitHub::API::Error
         false
       end
     end

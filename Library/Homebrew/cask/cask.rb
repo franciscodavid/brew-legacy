@@ -162,13 +162,15 @@ module Cask
     end
 
     def eql?(other)
-      token == other.token
+      instance_of?(other.class) && token == other.token
     end
     alias == eql?
 
     def to_h
       {
         "token"          => token,
+        "full_token"     => full_name,
+        "tap"            => tap&.name,
         "name"           => name,
         "desc"           => desc,
         "homepage"       => homepage,

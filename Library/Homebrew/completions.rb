@@ -129,8 +129,6 @@ module Homebrew
 
     sig { params(command: String).returns(T::Boolean) }
     def command_gets_completions?(command)
-      return false if command.start_with? "cask " # TODO: (2.8) remove when `brew cask` commands are removed
-
       command_options(command).any?
     end
 
@@ -167,7 +165,7 @@ module Homebrew
       return unless command_gets_completions? command
 
       named_completion_string = ""
-      if types = Commands.named_args_type(command)
+      if (types = Commands.named_args_type(command))
         named_args_strings, named_args_types = types.partition { |type| type.is_a? String }
 
         named_args_types.each do |type|
@@ -221,7 +219,7 @@ module Homebrew
         conflicts = generate_zsh_option_exclusions(command, opt)
         "#{conflicts}#{opt}[#{format_description desc}]"
       end
-      if types = Commands.named_args_type(command)
+      if (types = Commands.named_args_type(command))
         named_args_strings, named_args_types = types.partition { |type| type.is_a? String }
 
         named_args_types.each do |type|
@@ -291,7 +289,7 @@ module Homebrew
 
       subcommands = []
       named_args = []
-      if types = Commands.named_args_type(command)
+      if (types = Commands.named_args_type(command))
         named_args_strings, named_args_types = types.partition { |type| type.is_a? String }
 
         named_args_types.each do |type|
