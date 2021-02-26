@@ -46,8 +46,12 @@ module Homebrew
       },
       HOMEBREW_BOTTLE_DOMAIN:                 {
         description:  "Use this URL as the download mirror for bottles. " \
+                      "If bottles at that URL are temporarily unavailable, " \
+                      "the default bottle domain will be used as a fallback mirror. " \
                       "For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to " \
-                      "download from the prefix `http://localhost:8080/`.",
+                      "download from the prefix `http://localhost:8080/`. " \
+                      "If bottles are not available at `HOMEBREW_BOTTLE_DOMAIN` " \
+                      "they will be downloaded from the default bottle domain.",
         default_text: "macOS: `https://homebrew.bintray.com/`, " \
                       "Linux: `https://linuxbrew.bintray.com/`.",
         default:      HOMEBREW_BOTTLE_DEFAULT_DOMAIN,
@@ -178,6 +182,10 @@ module Homebrew
         description:  "Print this text before the installation summary of each successful build.",
         default_text: 'The "Beer Mug" emoji.',
         default:      "🍺",
+      },
+      HOMEBREW_INTERNET_ARCHIVE_KEY:          {
+        description: "Use this API key when accessing the Internet Archive S3 API, where bottles are stored. " \
+                     "The format is access:secret. See https://archive.org/account/s3.php",
       },
       HOMEBREW_LIVECHECK_WATCHLIST:           {
         description: "Consult this file for the list of formulae to check by default when no formula argument " \

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "resource"
+require "download_strategy"
 require "checksum"
 require "version"
 require "options"
@@ -292,7 +293,7 @@ class Bottle
 
   attr_reader :name, :resource, :prefix, :cellar, :rebuild
 
-  def_delegators :resource, :url, :fetch, :verify_download_integrity
+  def_delegators :resource, :url, :verify_download_integrity
   def_delegators :resource, :cached_download, :clear_cache
 
   def initialize(formula, spec)
@@ -312,6 +313,18 @@ class Bottle
     @prefix = spec.prefix
     @cellar = cellar
     @rebuild = spec.rebuild
+  end
+
+  def fetch(verify_download_integrity: true)
+    # add the default bottle domain as a fallback mirror
+    if @resource.download_strategy == CurlDownloadStrategy &&
+       @resource.url.start_with?(Homebrew::EnvConfig.bottle_domain)
+      fallback_url = @resource.url
+                              .sub(/^#{Regexp.escape(Homebrew::EnvConfig.bottle_domain)}/,
+                                   HOMEBREW_BOTTLE_DEFAULT_DOMAIN)
+      @resource.mirror(fallback_url) if [@resource.url, *@resource.mirrors].exclude?(fallback_url)
+    end
+    @resource.fetch(verify_download_integrity: verify_download_integrity)
   end
 
   def compatible_locations?
@@ -402,9 +415,9 @@ class BottleSpecification
     cellar == :any_skip_relocation
   end
 
-  sig { params(tag: Symbol).returns(T::Boolean) }
-  def tag?(tag)
-    checksum_for(tag) ? true : false
+  sig { params(tag: Symbol, exact: T::Boolean).returns(T::Boolean) }
+  def tag?(tag, exact: false)
+    checksum_for(tag, exact: exact) ? true : false
   end
 
   # Checksum methods in the DSL's bottle block take
@@ -444,9 +457,9 @@ class BottleSpecification
     collector[tag] = { checksum: Checksum.new(digest), cellar: cellar }
   end
 
-  sig { params(tag: Symbol).returns(T.nilable([Checksum, Symbol, T.any(Symbol, String)])) }
-  def checksum_for(tag)
-    collector.fetch_checksum_for(tag)
+  sig { params(tag: Symbol, exact: T::Boolean).returns(T.nilable([Checksum, Symbol, T.any(Symbol, String)])) }
+  def checksum_for(tag, exact: false)
+    collector.fetch_checksum_for(tag, exact: exact)
   end
 
   def checksums

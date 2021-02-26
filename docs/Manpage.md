@@ -734,8 +734,7 @@ Display Homebrew's install path. *Default:*
   - macOS ARM: `/opt/homebrew`
   - Linux: `/home/linuxbrew/.linuxbrew`
 
-If *`formula`* is provided, display the location in the Cellar where *`formula`*
-is or would be installed.
+If *`formula`* is provided, display the location where *`formula`* is or would be installed.
 
 * `--unbrewed`:
   List files in Homebrew's prefix not installed by Homebrew.
@@ -1100,14 +1099,14 @@ casks to check is taken from `HOMEBREW_LIVECHECK_WATCHLIST` or
 * `--cask`:
   Only check casks.
 
-### `man` [*`--fail-if-changed`*]
+### `man` [*`--fail-if-not-changed`*]
 
 Generate Homebrew's manpages.
 
 *Note:* Not (yet) working on Apple Silicon.
 
-* `--fail-if-changed`:
-  Return a failing status code if changes are detected in the manpage outputs. This can be used to notify CI when the manpages are out of date. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date).
+* `--fail-if-not-changed`:
+  Return a failing status code if no changes are detected in the manpage outputs. This can be used to notify CI when the manpages are out of date. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date).
 
 ### `mirror` [*`options`*] *`formula`* [...]
 
@@ -1181,6 +1180,8 @@ Requires write access to the repository.
   Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--artifact`:
   Download artifacts with the specified name (default: `bottles`).
+* `--archive-item`:
+  Upload to the specified Internet Archive item (default: `homebrew`).
 * `--bintray-org`:
   Upload to the specified Bintray organisation (default: `homebrew`).
 * `--tap`:
@@ -1208,6 +1209,8 @@ Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
   Do not generate a new commit before uploading.
 * `--warn-on-upload-failure`:
   Warn instead of raising an error if the bottle upload fails. Useful for repairing bottle uploads that previously failed.
+* `--archive-item`:
+  Upload to the specified Internet Archive item (default: `homebrew`).
 * `--bintray-org`:
   Upload to the specified Bintray organisation (default: `homebrew`).
 * `--root-url`:
@@ -1216,6 +1219,8 @@ Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
 ### `prof` [*`--stackprof`*] *`command`* [...]
 
 Run Homebrew with a Ruby profiler. For example, `brew prof readall`.
+
+*Note:* Not (yet) working on Apple Silicon.
 
 * `--stackprof`:
   Use `stackprof` instead of `ruby-prof` (the default).
@@ -1724,7 +1729,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
   <br>If set, use Bootsnap to speed up repeated `brew` calls. A no-op when using Homebrew's vendored, relocatable Ruby on macOS (as it doesn't work).
 
 - `HOMEBREW_BOTTLE_DOMAIN`
-  <br>Use this URL as the download mirror for bottles. For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to download from the prefix `http://localhost:8080/`.
+  <br>Use this URL as the download mirror for bottles. If bottles at that URL are temporarily unavailable, the default bottle domain will be used as a fallback mirror. For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to download from the prefix `http://localhost:8080/`. If bottles are not available at `HOMEBREW_BOTTLE_DOMAIN` they will be downloaded from the default bottle domain.
 
   *Default:* macOS: `https://homebrew.bintray.com/`, Linux: `https://linuxbrew.bintray.com/`.
 
@@ -1833,6 +1838,9 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
   <br>Print this text before the installation summary of each successful build.
 
   *Default:* The "Beer Mug" emoji.
+
+- `HOMEBREW_INTERNET_ARCHIVE_KEY`
+  <br>Use this API key when accessing the Internet Archive S3 API, where bottles are stored. The format is access:secret. See https://archive.org/account/s3.php
 
 - `HOMEBREW_LIVECHECK_WATCHLIST`
   <br>Consult this file for the list of formulae to check by default when no formula argument is passed to `brew livecheck`.
