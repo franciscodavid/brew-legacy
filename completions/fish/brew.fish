@@ -271,13 +271,6 @@ __fish_brew_complete_arg '--repository' -l verbose -d 'Make some output more ver
 __fish_brew_complete_arg '--repository' -a '(__fish_brew_suggest_taps_installed)'
 
 
-__fish_brew_complete_cmd '--version' 'Print the version numbers of Homebrew, Homebrew/homebrew-core and Homebrew/homebrew-cask (if tapped) to standard output'
-__fish_brew_complete_arg '--version' -l debug -d 'Display any debugging information'
-__fish_brew_complete_arg '--version' -l help -d 'Show this message'
-__fish_brew_complete_arg '--version' -l quiet -d 'Make some output more quiet'
-__fish_brew_complete_arg '--version' -l verbose -d 'Make some output more verbose'
-
-
 __fish_brew_complete_cmd '-S' 'Perform a substring search of cask tokens and formula names for text'
 __fish_brew_complete_arg '-S' -l cask -d 'Without text, list all locally available casks (including tapped ones, no online search is performed). With text, search online and locally for casks'
 __fish_brew_complete_arg '-S' -l closed -d 'Search for only closed GitHub pull requests'
@@ -295,13 +288,6 @@ __fish_brew_complete_arg '-S' -l pull-request -d 'Search for GitHub pull request
 __fish_brew_complete_arg '-S' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg '-S' -l ubuntu -d 'Search for text in the given package manager\'s list'
 __fish_brew_complete_arg '-S' -l verbose -d 'Make some output more verbose'
-
-
-__fish_brew_complete_cmd '-v' 'Print the version numbers of Homebrew, Homebrew/homebrew-core and Homebrew/homebrew-cask (if tapped) to standard output'
-__fish_brew_complete_arg '-v' -l debug -d 'Display any debugging information'
-__fish_brew_complete_arg '-v' -l help -d 'Show this message'
-__fish_brew_complete_arg '-v' -l quiet -d 'Make some output more quiet'
-__fish_brew_complete_arg '-v' -l verbose -d 'Make some output more verbose'
 
 
 __fish_brew_complete_cmd 'abv' 'Display brief statistics for your Homebrew installation'
@@ -588,6 +574,7 @@ __fish_brew_complete_cmd 'dispatch-build-bottle' 'Build bottles for these formul
 __fish_brew_complete_arg 'dispatch-build-bottle' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'dispatch-build-bottle' -l help -d 'Show this message'
 __fish_brew_complete_arg 'dispatch-build-bottle' -l issue -d 'If specified, post a comment to this issue number if the job fails'
+__fish_brew_complete_arg 'dispatch-build-bottle' -l linux -d 'Dispatch bottle for Linux (using GitHub runners)'
 __fish_brew_complete_arg 'dispatch-build-bottle' -l macos -d 'Version of macOS the bottle should be built for'
 __fish_brew_complete_arg 'dispatch-build-bottle' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'dispatch-build-bottle' -l tap -d 'Target tap repository (default: `homebrew/core`)'
@@ -1077,11 +1064,12 @@ __fish_brew_complete_arg 'pr-pull' -l warn-on-upload-failure -d 'Warn instead of
 __fish_brew_complete_arg 'pr-pull' -l workflows -d 'Retrieve artifacts from the specified workflow (default: `tests.yml`). Can be a comma-separated list to include multiple workflows'
 
 
-__fish_brew_complete_cmd 'pr-upload' 'Apply the bottle commit and publish bottles to Bintray or GitHub Releases'
+__fish_brew_complete_cmd 'pr-upload' 'Apply the bottle commit and publish bottles to a host'
 __fish_brew_complete_arg 'pr-upload' -l archive-item -d 'Upload to the specified Internet Archive item (default: `homebrew`)'
 __fish_brew_complete_arg 'pr-upload' -l bintray-org -d 'Upload to the specified Bintray organisation (default: `homebrew`)'
 __fish_brew_complete_arg 'pr-upload' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'pr-upload' -l dry-run -d 'Print what would be done rather than doing it'
+__fish_brew_complete_arg 'pr-upload' -l github-org -d 'Upload to the specified GitHub organisation\'s GitHub Packages (default: `homebrew`)'
 __fish_brew_complete_arg 'pr-upload' -l help -d 'Show this message'
 __fish_brew_complete_arg 'pr-upload' -l keep-old -d 'If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL'
 __fish_brew_complete_arg 'pr-upload' -l no-commit -d 'Do not generate a new commit before uploading'
@@ -1279,7 +1267,7 @@ __fish_brew_complete_arg 'tap-info' -a '(__fish_brew_suggest_taps_installed)'
 
 
 __fish_brew_complete_cmd 'tap-new' 'Generate the template files for a new tap'
-__fish_brew_complete_arg 'tap-new' -l branch -d 'Initialize Git repository with the specified branch name (default: `main`)'
+__fish_brew_complete_arg 'tap-new' -l branch -d 'Initialize Git repository and setup GitHub Actions workflows with the specified branch name (default: `main`)'
 __fish_brew_complete_arg 'tap-new' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'tap-new' -l help -d 'Show this message'
 __fish_brew_complete_arg 'tap-new' -l no-git -d 'Don\'t initialize a Git repository for the tap'

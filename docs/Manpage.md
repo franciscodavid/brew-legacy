@@ -749,8 +749,7 @@ If *`user`*`/`*`repo`* are provided, display where tap *`user`*`/`*`repo`*'s dir
 
 ### `--version`, `-v`
 
-Print the version numbers of Homebrew, Homebrew/homebrew-core and Homebrew/homebrew-cask
-(if tapped) to standard output.
+Print the version numbers of Homebrew, Homebrew/homebrew-core and Homebrew/homebrew-cask (if tapped) to standard output.
 
 ## DEVELOPER COMMANDS
 
@@ -1018,6 +1017,8 @@ Build bottles for these formulae with GitHub Actions.
   Dispatch specified workflow (default: `dispatch-build-bottle.yml`).
 * `--upload`:
   Upload built bottles to Bintray.
+* `--linux`:
+  Dispatch bottle for Linux (using GitHub runners).
 
 ### `edit` [*`--formula`*] [*`--cask`*] [*`formula`*|*`cask`* ...]
 
@@ -1197,7 +1198,7 @@ Requires write access to the repository.
 
 ### `pr-upload` [*`options`*]
 
-Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
+Apply the bottle commit and publish bottles to a host.
 
 * `--no-publish`:
   Apply the bottle commit and upload the bottles, but don't publish them.
@@ -1213,6 +1214,8 @@ Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
   Upload to the specified Internet Archive item (default: `homebrew`).
 * `--bintray-org`:
   Upload to the specified Bintray organisation (default: `homebrew`).
+* `--github-org`:
+  Upload to the specified GitHub organisation's GitHub Packages (default: `homebrew`).
 * `--root-url`:
   Use the specified *`URL`* as the root of the bottle's URL instead of Homebrew's default.
 
@@ -1304,7 +1307,7 @@ Generate the template files for a new tap.
 * `--pull-label`:
   Label name for pull requests ready to be pulled (default: `pr-pull`).
 * `--branch`:
-  Initialize Git repository with the specified branch name (default: `main`).
+  Initialize Git repository and setup GitHub Actions workflows with the specified branch name (default: `main`).
 
 ### `test` [*`options`*] *`installed_formula`* [...]
 
@@ -1828,6 +1831,12 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 
     *Note:* Homebrew doesn't require permissions for any of the scopes, but some developer commands may require additional permissions.
 
+- `HOMEBREW_GITHUB_PACKAGES_TOKEN`
+  <br>Use this GitHub personal access token when accessing the GitHub Packages Registry (where bottles may be stored).
+
+- `HOMEBREW_GITHUB_PACKAGES_USER`
+  <br>Use this username when accessing the GitHub Packages Registry (where bottles may be stored).
+
 - `HOMEBREW_GIT_EMAIL`
   <br>Set the Git author and committer email to this value.
 
@@ -1895,6 +1904,9 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 
 - `HOMEBREW_PRY`
   <br>If set, use Pry for the `brew irb` command.
+
+- `HOMEBREW_SIMULATE_MACOS_ON_LINUX`
+  <br>If set, running Homebrew on Linux will simulate certain macOS code paths. This is useful when auditing macOS formulae while on Linux. Implies `HOMEBREW_FORCE_HOMEBREW_ON_LINUX`.
 
 - `HOMEBREW_SKIP_OR_LATER_BOTTLES`
   <br>If set along with `HOMEBREW_DEVELOPER`, do not use bottles from older versions of macOS. This is useful in development on new macOS versions.
@@ -1972,7 +1984,7 @@ Homebrew API: <https://rubydoc.brew.sh>
 
 Homebrew's Project Leader is Mike McQuaid.
 
-Homebrew's Project Leadership Committee is Jonathan Chang, Markus Reiter, Misty De Meo, Sean Molenaar and Shaun Jackman.
+Homebrew's Project Leadership Committee is Issy Long, Jonathan Chang, Markus Reiter, Misty De Meo and Sean Molenaar.
 
 Homebrew's Technical Steering Committee is FX Coudert, Markus Reiter, Michka Popoff, Mike McQuaid and Misty De Meo.
 

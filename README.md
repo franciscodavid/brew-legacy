@@ -52,7 +52,7 @@ Please report security issues to our [HackerOne](https://hackerone.com/homebrew/
 ## Who We Are
 Homebrew's [Project Leader](https://docs.brew.sh/Homebrew-Governance#6-project-leader) is [Mike McQuaid](https://github.com/MikeMcQuaid).
 
-Homebrew's [Project Leadership Committee](https://docs.brew.sh/Homebrew-Governance#4-project-leadership-committee) is [Jonathan Chang](https://github.com/jonchang), [Markus Reiter](https://github.com/reitermarkus), [Misty De Meo](https://github.com/mistydemeo), [Sean Molenaar](https://github.com/SMillerDev) and [Shaun Jackman](https://github.com/sjackman).
+Homebrew's [Project Leadership Committee](https://docs.brew.sh/Homebrew-Governance#4-project-leadership-committee) is [Issy Long](https://github.com/issyl0), [Jonathan Chang](https://github.com/jonchang), [Markus Reiter](https://github.com/reitermarkus), [Misty De Meo](https://github.com/mistydemeo) and [Sean Molenaar](https://github.com/SMillerDev).
 
 Homebrew's [Technical Steering Committee](https://docs.brew.sh/Homebrew-Governance#7-technical-steering-committee) is [FX Coudert](https://github.com/fxcoudert), [Markus Reiter](https://github.com/reitermarkus), [Michka Popoff](https://github.com/iMichka), [Mike McQuaid](https://github.com/MikeMcQuaid) and [Misty De Meo](https://github.com/mistydemeo).
 
@@ -87,6 +87,6 @@ Homebrew is a member of the [Software Freedom Conservancy](https://sfconservancy
 
 [![Software Freedom Conservancy](https://sfconservancy.org/img/conservancy_64x64.png)](https://sfconservancy.org)
 
-Homebrew is generously supported by [Substack](https://github.com/substackinc), [Randy Reddig](https://github.com/ydnar), [embark-studios](https://github.com/embark-studios) and many other users and organisations via [GitHub Sponsors](https://github.com/sponsors/Homebrew).
+Homebrew is generously supported by [Substack](https://github.com/substackinc), [GitHub](https://github.com/githubsponsors), [Randy Reddig](https://github.com/ydnar), [embark-studios](https://github.com/embark-studios), [Realist.ai](https://github.com/RealistAI) and many other users and organisations via [GitHub Sponsors](https://github.com/sponsors/Homebrew).
 
-[![Substack](https://github.com/substackinc.png?size=64)](https://github.com/substackinc)
+[![Substack](https://github.com/substackinc.png?size=64)](https://github.com/substackinc)[![GitHub](https://github.com/githubsponsors.png?size=64)](https://github.com/githubsponsors)

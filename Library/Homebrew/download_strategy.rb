@@ -13,6 +13,8 @@ require "mechanize/http/content_disposition_parser"
 
 require "utils/curl"
 
+require "github_packages"
+
 # @abstract Abstract superclass for all download strategies.
 #
 # @api private
@@ -458,7 +460,10 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
         filename = URI.decode_www_form_component(encoded_filename).encode(encoding) if encoding && encoded_filename
       end
 
-      filename || content_disposition.filename
+      # Servers may include '/' in their Content-Disposition filename header. Take only the basename of this, because:
+      # - Unpacking code assumes this is a single file - not something living in a subdirectory.
+      # - Directory traversal attacks are possible without limiting this to just the basename.
+      (filename || content_disposition.filename).rpartition("/")[-1]
     end
 
     filenames = lines.map(&parse_content_disposition).compact
@@ -521,6 +526,25 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
   def curl(*args, **options)
     args << "--connect-timeout" << "15" unless mirrors.empty?
     super(*_curl_args, *args, **_curl_opts, **command_output_options, **options)
+  end
+end
+
+# Strategy for downloading a file from an GitHub Packages URL.
+#
+# @api public
+class CurlGitHubPackagesDownloadStrategy < CurlDownloadStrategy
+  attr_accessor :checksum, :name
+
+  private
+
+  def _fetch(url:, resolved_url:)
+    raise "Empty checksum" if checksum.blank?
+    raise "Empty name" if name.blank?
+
+    _, org, repo, = *url.match(GitHubPackages::URL_REGEX)
+
+    blob_url = "https://ghcr.io/v2/#{org}/#{repo}/#{name}/blobs/sha256:#{checksum}"
+    curl_download(blob_url, "--header", "Authorization: Bearer", to: temporary_path)
   end
 end
 
@@ -1049,7 +1073,7 @@ class CVSDownloadStrategy < VCSDownloadStrategy
   end
 
   def split_url(in_url)
-    parts = in_url.split(/:/)
+    parts = in_url.split(":")
     mod = parts.pop
     url = parts.join(":")
     [mod, url]
@@ -1240,6 +1264,8 @@ class DownloadStrategyDetector
 
   def self.detect_from_url(url)
     case url
+    when GitHubPackages::URL_REGEX
+      CurlGitHubPackagesDownloadStrategy
     when %r{^https?://github\.com/[^/]+/[^/]+\.git$}
       GitHubGitDownloadStrategy
     when %r{^https?://.+\.git$},

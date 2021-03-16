@@ -172,6 +172,13 @@ module Homebrew
                      "\n\n    *Note:* Homebrew doesn't require permissions for any of the scopes, but some " \
                      "developer commands may require additional permissions.",
       },
+      HOMEBREW_GITHUB_PACKAGES_TOKEN:         {
+        description: "Use this GitHub personal access token when accessing the GitHub Packages Registry "\
+                     "(where bottles may be stored).",
+      },
+      HOMEBREW_GITHUB_PACKAGES_USER:          {
+        description: "Use this username when accessing the GitHub Packages Registry (where bottles may be stored).",
+      },
       HOMEBREW_GIT_EMAIL:                     {
         description: "Set the Git author and committer email to this value.",
       },
@@ -258,6 +265,11 @@ module Homebrew
       },
       HOMEBREW_PRY:                           {
         description: "If set, use Pry for the `brew irb` command.",
+        boolean:     true,
+      },
+      HOMEBREW_SIMULATE_MACOS_ON_LINUX:       {
+        description: "If set, running Homebrew on Linux will simulate certain macOS code paths. This is useful " \
+                     "when auditing macOS formulae while on Linux. Implies `HOMEBREW_FORCE_HOMEBREW_ON_LINUX`.",
         boolean:     true,
       },
       HOMEBREW_SKIP_OR_LATER_BOTTLES:         {
